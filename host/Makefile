@@ -1,4 +1,3 @@
-CC=gcc
 
 all: qemu-nand-creator sram-image-utils
 
