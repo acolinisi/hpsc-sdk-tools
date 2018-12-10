@@ -30,7 +30,7 @@ void show_help(char * executable)
     printf("\t'file name' is the SRAM chip image file name\n\n");
     printf("'command' and 'command parameters':\n");
     printf("\t'create' or 'c' creates an empty SRAM image, 'command parameters' must be <file size in either decimal or Hex>\n");
-    printf("\t'add' or 'a' add a file to SRAM image, 'command parameters' must be <file name> <load address in either decimal or Hex>\n");
+    printf("\t'add' or 'a' add a file to SRAM image, 'command parameters' must be <file name> <file name id> <load address in either decimal or Hex>\n");
     printf("\t'show' or 's' shows the header content of SRAM image, no 'command parameters' are needed\n");
     printf("\t'help' or 'h' shows this message\n\n");
     exit(0);
@@ -110,7 +110,7 @@ void sram_file_create (char * fname, uint32_t fsize)
 
 #define BUF_ZONE 128
 #define BUF_SIZE 256
-void file_add (char * fname, char * fname_add, uint64_t load_addr64)
+void file_add (char * fname, char * fname_add, char * fname_id, uint64_t load_addr64)
 {
     FILE *fsram, *f2add;
     uint32_t i, fsize, offset, rem, iter, load_addr_low, load_addr_high;
@@ -174,7 +174,7 @@ void file_add (char * fname, char * fname_add, uint64_t load_addr64)
     fd_buf[gt.n_files-1].offset = offset;
     fd_buf[gt.n_files-1].load_addr = load_addr64 & 0xffffffff;
     fd_buf[gt.n_files-1].load_addr_high = (load_addr64 >> 32) & 0xffffffff;
-    sprintf(fd_buf[gt.n_files-1].name,"%s ", fname_add);
+    sprintf(fd_buf[gt.n_files-1].name,"%s", fname_id);
     ptr = (char *) fd_buf;
     fwrite(ptr, sizeof(file_descriptor) * gt.n_files, 1, fsram);
    
@@ -232,7 +232,7 @@ void file_load_all(char * fname)
 
 int main (int argc, char ** argv)
 {
-    char *fname_sram, *fname_add, *stopstring;
+    char *fname_sram, *fname_add, *fname_id, *stopstring;
     uint32_t fsize;
     uint64_t load_addr64;
 
@@ -250,14 +250,15 @@ int main (int argc, char ** argv)
                  sram_file_create(fname_sram, fsize);
                  break;
         case 'a': /* add a file to the image */
-                 if (argc != 5) { usage(argv[0]); }
+                 if (argc != 6) { usage(argv[0]); }
                  fname_sram = argv[2];
                  fname_add = argv[3];
-                 if (argv[4][0] == '0' && argv[4][1] == 'x') 
-                     load_addr64 = strtoul(argv[4], &stopstring, 16);
+                 fname_id = argv[4];
+                 if (argv[5][0] == '0' && argv[5][1] == 'x')
+                     load_addr64 = strtoul(argv[5], &stopstring, 16);
                  else
-                     load_addr64 = strtoul(argv[4], &stopstring, 10);
-                 file_add(fname_sram, fname_add, load_addr64);
+                     load_addr64 = strtoul(argv[5], &stopstring, 10);
+                 file_add(fname_sram, fname_add, fname_id, load_addr64);
                  break;
         case 's': /* show the header information */
                  if (argc != 3) { usage(argv[0]); }
