@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <errno.h>
 #include "sram-image-utils.h"
 
 #define DEBUG
@@ -36,10 +38,15 @@ void show_help(char * executable)
 
 void file_show (char * fname)
 {
-    FILE * fp = fopen(fname, "rb");
     char * buffer;
     uint32_t fsize;
     int i, read_size;
+
+    FILE * fp = fopen(fname, "rb");
+    if (!fp) {
+        fprintf(stderr, "error: failed to open '%s': %s\n", fname, strerror(errno));
+        exit(1);
+    }
  
     read_size = fread(&gt, sizeof(gt), 1, fp);
     printf("========== Header of SRAM file ==========\n");
@@ -68,10 +75,15 @@ void file_show (char * fname)
 
 void sram_file_create (char * fname, uint32_t fsize)
 {
-    FILE * fp = fopen(fname, "wb");
     char buffer[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     uint32_t i, rem;
     char * ptr;
+
+    FILE * fp = fopen(fname, "wb");
+    if (!fp) {
+        fprintf(stderr, "error: failed to open '%s': %s\n", fname, strerror(errno));
+        exit(1);
+    }
 
     /* high_mark_fd: end of file 
        low_mark_data :  sizeof(global_table)
@@ -108,7 +120,16 @@ void file_add (char * fname, char * fname_add, uint64_t load_addr64)
     file_descriptor * fd_buf = NULL;
 
     fsram = fopen(fname, "r+b");
+    if (!fsram) {
+        fprintf(stderr, "error: failed to open '%s': %s\n", fname, strerror(errno));
+        exit(1);
+    }
+
     f2add = fopen(fname_add, "rb");
+    if (!f2add) {
+        fprintf(stderr, "error: failed to open '%s': %s\n", fname_add, strerror(errno));
+        exit(1);
+    }
 
     /* read global table and file descriptors */
     fseek(fsram, 0L, SEEK_SET);
@@ -181,6 +202,10 @@ void file_load_all(char * fname)
     unsigned char buffer[BUF_SIZE];
     unsigned char * ptr = (char *)&gt;
     FILE *fsram = fopen(fname, "rb");
+    if (!fsram) {
+        fprintf(stderr, "error: failed to open '%s': %s\n", fname, strerror(errno));
+        exit(1);
+    }
 
     fseek(fsram, 0L, SEEK_SET);
     read_size = fread(ptr, sizeof(gt), 1, fsram);
