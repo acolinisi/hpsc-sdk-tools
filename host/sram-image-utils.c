@@ -52,8 +52,10 @@ void file_show (char * fname)
     printf("========== Header of SRAM file ==========\n");
     printf(" size : 0x%x\n", gt.fsize);
     printf(" number of files: %d\n", gt.n_files);
-    printf(" used space: 0x%x\n", gt.fsize - gt.low_mark_data + gt.high_mark_fd);
-    printf(" free space: 0x%x\n\n", gt.low_mark_data - gt.high_mark_fd);
+    uint32_t space_used = gt.fsize - gt.low_mark_data + gt.high_mark_fd;
+    uint32_t space_free = gt.low_mark_data - gt.high_mark_fd;
+    printf(" used space: 0x%x (%u KB)\n",   space_used, space_used / 1024);
+    printf(" free space: 0x%x (%u KB)\n\n", space_free, space_free / 1024);
 
     if (gt.n_files > 0) {
         file_descriptor * fd;
@@ -66,7 +68,7 @@ void file_show (char * fname)
             printf("\tfile name           : %s\n", fd[i].name);
             printf("\tto be loaded at     : 0x%x%x\n", fd[i].load_addr_high, fd[i].load_addr);
             printf("\toffset in sram image: 0x%x\n", fd[i].offset);
-            printf("\tsize                : 0x%x\n", fd[i].size);
+            printf("\tsize                : 0x%x (%u KB)\n", fd[i].size, fd[i].size / 1024);
             printf("\tvalid               : 0x%x\n", fd[i].valid);
         }
         free(buffer);
