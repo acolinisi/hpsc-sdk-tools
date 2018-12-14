@@ -14,6 +14,8 @@
     #define DBG_PRINTF(...)
 #endif
 
+#define ALIGNMENT_BITS 8 /* align files to 256-byte boundary, for DMA tx */
+
 global_table gt;
 
 void usage(char * executable)
@@ -110,7 +112,6 @@ void sram_file_create (char * fname, uint32_t fsize)
     fclose(fp);
 }
 
-#define BUF_ZONE 128
 #define BUF_SIZE 256
 void file_add (char * fname, char * fname_add, char * fname_id, uint64_t load_addr64)
 {
@@ -146,7 +147,9 @@ void file_add (char * fname, char * fname_add, char * fname_id, uint64_t load_ad
         printf("Error: file is too big to add\n");
         exit(0);
     }
-    offset = gt.low_mark_data - fsize - BUF_ZONE;
+    offset = gt.low_mark_data - fsize;
+    while (offset & ((1 << (ALIGNMENT_BITS)) - 1))
+        --offset;
 
     /* move file pointer of SRAM image */
     fseek(f2add, 0L, SEEK_SET);
