@@ -85,15 +85,16 @@ int main(int argc, char *argv[])
     bool Image_wip = true;
     int nand_flash;
     int generate_empty_image;
+    const char *out_file;
 
     const char *exe_name = argv[0];
     argc--;
     argv++;
 
-    if (argc != 6) {
+    if (argc != 7) {
         fprintf(stderr, "Usage: %s <page size> <oob size> " \
                 "<num of pages per block> <num_blocks> "\
-                "<ecc size> <1: empty image, 0: stdin>\n", exe_name);
+                "<ecc size> <1: empty image, 0: stdin> <out file>\n", exe_name);
         return 1;
     }
 
@@ -114,12 +115,14 @@ int main(int argc, char *argv[])
     ecc_size = strtol(argv[4], NULL, 0);
     ecc_data = (uint8_t *)malloc(ecc_size);
     generate_empty_image = atoi(argv[5]);
+    out_file = argv[6];
     if (generate_empty_image) Image_done = true;
 
     uint8_t *oob_buf = (uint8_t *)malloc(oob_size);
     memset(oob_buf, 0xFF, oob_size);
 
-    nand_flash = open("./qemu_nand.bin", O_CREAT | O_WRONLY, S_IRWXU);
+    nand_flash = open(out_file, O_CREAT | O_WRONLY,
+		    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 
     /* bad block marker oob data */
     uint8_t oob_buf_bad[oob_size];
