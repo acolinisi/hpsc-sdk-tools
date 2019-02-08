@@ -145,7 +145,7 @@ void file_add (char * fname, char * fname_add, char * fname_id, uint64_t load_ad
     fsize = ftell(f2add);
     if (fsize > gt.low_mark_data - gt.high_mark_fd) {
         printf("Error: file is too big to add\n");
-        exit(0);
+        exit(1);
     }
     offset = gt.low_mark_data - fsize;
     while (offset & ((1 << (ALIGNMENT_BITS)) - 1))
