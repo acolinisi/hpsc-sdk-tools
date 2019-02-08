@@ -282,4 +282,5 @@ int main (int argc, char ** argv)
                  usage(argv[0]);
                  break;
     }
+    return 0;
 }
