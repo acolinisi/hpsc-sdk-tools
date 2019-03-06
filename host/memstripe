@@ -1,0 +1,97 @@
+#!/usr/bin/python
+
+import argparse
+import sys
+import os
+
+parser = argparse.ArgumentParser(
+    description="Stripe/unstripe memory images")
+parser.add_argument('-b', '--base',
+    type=lambda x: int(x.replace('_', ''), 16),
+    help='Base address (in base 16) of the data at the beginning of the images')
+parser.add_argument('-i', '--input',
+    help='Input file')
+parser.add_argument('-o', '--output',
+    help='Output file')
+parser.add_argument('files', nargs='+',
+    help='Input (if -o also given) or output (if -i also given) files ' + \
+         'with separated memory images')
+args = parser.parse_args()
+
+if args.input and args.output:
+    print >>sys.stderr, "ERROR: both --input and --output passed"
+    args.print_help()
+    sys.exit(1)
+
+if args.output: # striped -> unstriped
+    fin = []
+    sz = None
+    for f in args.files:
+        s = os.stat(f)
+        if sz is not None:
+            if sz != s.st_size:
+                print >>sys.stderr, "Input files of different size"
+                sys.exit(1)
+        sz = s.st_size
+        fin.append(open(f, "rb"))
+    fout = open(args.output, "wb")
+    out_fds = [fout]
+
+elif args.input: # unstriped -> striped
+    s = os.stat(args.input)
+    sz = s.st_size
+    fin = open(args.input, "rb")
+    fout = []
+    for f in args.files:
+        fd = open(f, "wb")
+        fout.append(fd)
+    out_fds = fout
+
+LINE_SZ = 32
+
+lines = sz / LINE_SZ;
+
+BASE_ADDR = args.base
+FROM = 6
+TO = 43
+
+def hash_xor_43_6(addr):
+    addr >>= FROM
+    h = addr & 0x1
+    addr >>= 1
+    for i in range((TO-FROM+1)-1):
+        h ^= addr & 0x1
+        addr >>= 1
+    return h
+
+hashfunc = hash_xor_43_6
+
+try:
+    for fd in out_fds:
+        os.ftruncate(fd.fileno(), sz)
+
+    offset = 0
+    for w in range(lines):
+        addr = BASE_ADDR + offset
+        idx = hashfunc(addr)
+
+        if args.output: # striped -> unstriped
+            fd_in = fin[idx]
+            fd_out = fout
+        elif args.input: # unstriped -> striped
+            fd_in = fin
+            fd_out = fout[idx]
+
+        fd_in.seek(offset)
+        line = fd_in.read(LINE_SZ)
+
+        fd_out.seek(offset)
+        fd_out.write(bytearray(line))
+
+        offset += LINE_SZ
+except:
+    for fd in out_fds:
+        fname = fd.name
+        fd.close()
+        os.unlink(fname)
+    raise

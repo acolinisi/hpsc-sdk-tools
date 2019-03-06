@@ -1,0 +1,136 @@
+#!/usr/bin/python
+
+import argparse
+import sys
+import struct
+import os
+
+class FileIO:
+    def __init__(self, fd):
+        self.fd = fd
+    def read_block(self):
+        raise Exception("Input from requested format not implemented")
+    def write_block(self, b):
+        raise Exception("Output to requested format not implemented")
+
+class VerilogHIO(FileIO):
+    WIDTH_BYTES = 32
+    WORD_SIZE = 8
+    WORDS_PER_LINE = WIDTH_BYTES / WORD_SIZE
+    PACK_FMT = '<' + ('Q' * WORDS_PER_LINE)
+
+    def __init__(self, fd):
+        FileIO.__init__(self, fd)
+
+    def read_block(self):
+        for line in self.fd:
+            if line.startswith('//'):
+                continue
+
+            # Sections not yet supported (i.e. non-contiguous content)
+            if line.startswith('@'):
+                raise Exception("Sections not supported")
+
+            h = line.strip()
+
+            k = 0
+            words = []
+            for i in range(self.WORDS_PER_LINE):
+                w = int(h[k:k + self.WORD_SIZE * 2], 16)
+                k += self.WORD_SIZE * 2
+                words.append(w)
+            yield struct.pack(self.PACK_FMT, *words[::-1])
+
+    def write_block(self, b):
+        nlines = len(b) / self.WIDTH_BYTES
+        k = 0
+
+        for i in range(nlines):
+            line = ("%016X" * self.WORDS_PER_LINE + "\n") % struct.unpack(self.PACK_FMT, b[k:k+self.WIDTH_BYTES])[::-1]
+            k += self.WIDTH_BYTES
+            self.fd.write(line)
+
+        nr = len(b) % self.WIDTH_BYTES
+        if nr > 0:
+            line = bytearray(self.WIDTH_BYTES * 2 + 1)
+            line[-1] = '\n'
+            p = (self.WIDTH_BYTES - 1) * 2
+            for d in range(nr):
+                d = "%02X" % struct.unpack('<B', b[k:k+1])[0]
+                k += 1
+                line[p - 1] = d[0]
+                line[p] = d[1]
+                p -= 2
+            while p >= 0:
+                line[p] = '0'
+                p -= 1
+            self.fd.write(line)
+
+class BinaryIO(FileIO):
+    def __init__(self, fd, block_size=4096):
+        FileIO.__init__(self, fd)
+        self.block_size = block_size
+
+    def read_block(self):
+        while True:
+            b = self.fd.read(self.block_size)
+            yield b
+            if len(b) < self.block_size:
+                break
+
+    def write_block(self, b):
+        self.fd.write(b)
+
+FORMATS = {
+    "Verilog-H": VerilogHIO,
+    "binary": BinaryIO,
+}
+
+class HelpAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.print_help()
+        print
+        print "Supported formats:", " ".join(FORMATS)
+        sys.exit(0)
+
+parser = argparse.ArgumentParser(add_help=False,
+    description="Convert files among object formats")
+parser.add_argument('-I', '--target-input', default="binary",
+    help="Input file format (see '--help' for supported formats)")
+parser.add_argument('-O', '--target-output', default="binary",
+    help="Output file format (see '--help' for supported formats)")
+parser.add_argument('-h', '--help', action=HelpAction, nargs=0,
+    help="Print usage information")
+parser.add_argument('in_file',
+    help='Input file')
+parser.add_argument('out_file',
+    help='Output file')
+args = parser.parse_args()
+
+def validate_format(cat, fmt, fmts):
+    if fmt not in fmts or fmt == "help":
+        if fmt != "help":
+            print >>sys.stderr, "unsupported", cat, "format:", fmt
+            rc = 1
+        else:
+            rc = 0
+        print("supported", cat, "formats:", " ",join(fmts))
+        sys.exit(rc)
+
+validate_format("input", args.target_input, FORMATS)
+validate_format("output", args.target_output, FORMATS)
+
+fin = open(args.in_file, "rb")
+fout = open(args.out_file, "wb")
+
+try:
+    reader = FORMATS[args.target_input](fin)
+    writer = FORMATS[args.target_output](fout)
+
+    for b in reader.read_block():
+        writer.write_block(b)
+except:
+    fname = fout.name
+    fout.close()
+    os.unlink(fname)
+    raise

@@ -1,0 +1,132 @@
+#!/bin/bash
+
+set -e
+
+run() {
+    echo $@
+    "$@"
+}
+
+extract_word() {
+    IDX=$1
+    shift
+    local i=0
+    for w in "$@"
+    do
+        if [ $i -eq $IDX ]
+        then
+            echo $w
+            return
+        fi
+        i=$(($i + 1))
+    done
+}
+
+parse_addr() {
+    echo $1 | sed 's/_//g'
+}
+
+usage() {
+    echo "Usage: $(basename $0) [-hl] map_file output_file"
+    echo "       -l : only list input files"
+    echo "       -h : usage information"
+}
+
+LIST_ONLY=0
+while getopts "h?l?" o
+do
+    case "${o}" in
+    l)
+        LIST_ONLY=1
+        ;;
+    h)
+        usage
+        exit 0
+        ;;
+    *)
+        usage 2>&1
+        exit 1
+        ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ $# -lt 1 ]
+then
+    usage 2>&1
+    exit 1
+fi
+
+MAP_FILE=$1
+shift
+
+if [ $LIST_ONLY -eq 0 ]
+then
+    if [ $# -ne 1 ]
+    then
+        usage 2>&1
+        exit 1
+    fi
+    OUT_FILE=$1
+    shift
+fi
+
+# Only for dd internals, does not affect the output
+BLOCK_SIZE=4096
+
+BASE_ADDR=
+SIZE=
+line_num=0
+while read line
+do
+    if [[ "$line" =~ ^\s*$ || "$line" =~ ^[[:space:]]*# ]]
+    then
+        continue
+    fi
+
+    if [ -z $BASE_ADDR ]
+    then
+        BASE_ADDR=$(parse_addr $(extract_word 0 $line))
+        SIZE=$(extract_word 1 $line)
+        continue
+    fi
+
+    ADDR=$(parse_addr $(extract_word 0 $line))
+    IN_FILE=$(extract_word 1 $line)
+    if [[ -z $ADDR || -z $IN_FILE ]]
+    then
+        echo "Invalid syntax in map file on line $line_num" 1>&2
+        exit 2
+    fi
+
+    if [ $LIST_ONLY -eq 1 ]
+    then
+        echo "$IN_FILE"
+        continue
+    fi
+
+    if [ -z $OUTPUT_READY ]
+    then
+        if [ -z SIZE ]
+        then
+            echo "Failed to parse out memory size from first line" 1>&2
+            exit 2
+        fi
+        run truncate --size=$SIZE $OUT_FILE
+        OUTPUT_READY=1
+    fi
+
+    OFFSET=$(($ADDR - $BASE_ADDR))
+    run dd if=$IN_FILE of=$OUT_FILE bs=$BLOCK_SIZE seek=$(($OFFSET/$BLOCK_SIZE)) conv=notrunc
+    line_num=$(($line_num + 1))
+done < $MAP_FILE
+
+cleanup() {
+    if [ $LIST_ONLY -eq 0 ]
+    then
+        return
+    fi
+    rm -f $OUT_FILE
+}
+
+trap cleanup ERR
