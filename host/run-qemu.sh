@@ -64,6 +64,7 @@ HPPS_NAND_PAGES_PER_BLOCK=64 # bytes
 QEMU_ENV=qemu-env.sh
 
 source_if_exists "$(dirname "$0")/$QEMU_ENV"
+source_if_exists "$(dirname "$0")/../conf/$QEMU_ENV"
 source_if_exists "$HPSC_ROOT/$QEMU_ENV"
 source_if_exists "$PWD/$QEMU_ENV"
 
@@ -117,7 +118,7 @@ create_kern_image() {
 create_syscfg_image()
 {
     echo Compiling system config from INI to binary format...
-    run ${BSP_DIR}/cfgc -s "${SYSCFG_SCHEMA}" "${SYSCFG}" "${SYSCFG_BIN}"
+    run ${HPSC_HOST_UTILS_DIR}/cfgc -s "${SYSCFG_SCHEMA}" "${SYSCFG}" "${SYSCFG_BIN}"
 }
 
 syscfg_get()
@@ -199,7 +200,7 @@ function attach_consoles()
     #while test $(lsof -ti :$QMP_PORT | wc -l) -eq 0
     while true
     do
-        PTYS=$(${BSP_DIR}/qmp.py -q localhost $QMP_PORT query-chardev ${SERIAL_PORTS[*]} 2>/dev/null)
+        PTYS=$(${HPSC_HOST_UTILS_DIR}/qmp.py -q localhost $QMP_PORT query-chardev ${SERIAL_PORTS[*]} 2>/dev/null)
         if [ -z "$PTYS" ]
         then
             #echo "Waiting for Qemu to open QMP port..."
@@ -209,7 +210,7 @@ function attach_consoles()
             then
                 echo "ERROR: failed to get PTY paths from Qemu via QMP port: giving up."
                 echo "Here is what happened when we tried to get the PTY paths:"
-                run ${BSP_DIR}/qmp.py -q localhost $QMP_PORT query-chardev ${SERIAL_PORTS[*]}
+                run ${HPSC_HOST_UTILS_DIR}/qmp.py -q localhost $QMP_PORT query-chardev ${SERIAL_PORTS[*]}
                 exit # give up to not accumulate waiting processes
             fi
         else
@@ -239,7 +240,7 @@ function attach_consoles()
     if [ "$RESET" -eq 1 ]
     then
         echo "Sending 'continue' command to Qemu to reset the machine..."
-        ${BSP_DIR}/qmp.py localhost $QMP_PORT cont
+        ${HPSC_HOST_UTILS_DIR}/qmp.py localhost $QMP_PORT cont
     else
         echo "Waiting for 'continue' (aka. reset) command via GDB or QMP connection..."
     fi
