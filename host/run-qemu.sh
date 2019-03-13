@@ -37,8 +37,7 @@ HPPS_BL_ADDR=0x80020000
 HPPS_DT_ADDR=0x80060000
 HPPS_KERN_ADDR=0x80064000
 HPPS_KERN_LOAD_ADDR=0x80480000 # (base + TEXT_OFFSET), where base must be aligned to 2MB
-HPPS_RAMDISK_ADDR=0x803c2000
-# HPPS_RAMDISK_LOAD_ADDR      # where BL extracts the ramdisk, set by u-boot image header
+HPPS_INITRAMFS_ADDR=0x803c2000
 
 # RTPS
 RTPS_BL_ADDR=0x60000000       # load address for R52 u-boot
@@ -450,7 +449,7 @@ if [ $? -ne 0 ]; then echo "ERROR: syscfg_get failed" && exit 1; fi
 
 if [ "$HPPS__ROOTFS_LOC" = "HPPS_DRAM" ]
 then
-    COMMAND+=(-device "loader,addr=${HPPS_RAMDISK_ADDR},file=${HPPS_RAMDISK},force-raw,cpu-num=4")
+    COMMAND+=(-device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=4")
 fi
 
 # Storing TRCH code in NV mem is not yet supported, so it is loaded directly
