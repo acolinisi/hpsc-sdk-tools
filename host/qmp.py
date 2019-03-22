@@ -7,7 +7,7 @@ import json
 import argparse
 
 parser = argparse.ArgumentParser(
-    description="Generate assembly source for vector table")
+    description="Interact with Qemu via the QMP interface")
 parser.add_argument('host',
     help='Qemu QMP Telnet server hostname')
 parser.add_argument('port', type=int,
