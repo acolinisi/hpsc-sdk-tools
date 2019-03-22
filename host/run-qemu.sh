@@ -154,10 +154,11 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-n netcfg] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-e env]  [-n netcfg] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
+    echo "               -e env: additional environment settings file to load" 1>&2
     echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
@@ -267,10 +268,14 @@ ID=0
 MONITOR=1
 
 # parse options
-while getopts "h?S?q?n:i:" o; do
+while getopts "h?S?q?e:n:i:" o; do
     case "${o}" in
         S)
             RESET=0
+            ;;
+        e)
+            echo Loading env from: $OPTARG
+            source "$OPTARG"
             ;;
         i)
             ID="$OPTARG"
