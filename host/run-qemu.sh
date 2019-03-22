@@ -16,6 +16,16 @@
 #      - configparse : for config INI->BIN compiler (cfgc)
 #      - json : for QMP and for cfgc
 
+function finish {
+    if [ -n "$GDB_CMD_FILE" ]
+    then
+        rm "$GDB_CMD_FILE"
+    fi
+    local JOBS="$(jobs -p)"
+    [[ -z "$JOBS" ]] || kill $JOBS
+}
+trap finish EXIT
+
 function source_if_exists()
 {
     if [ -f "$1" ]
@@ -488,16 +498,6 @@ then
     echo "DEBUG_PORT = ${HOST_BIND_IP}:${DEBUG_PORT} -> ${TARGET_IP}:${DEBUG_TARGET_PORT}"
 fi
 echo
-
-function finish {
-    if [ -n "$GDB_CMD_FILE" ]
-    then
-        rm "$GDB_CMD_FILE"
-    fi
-    local JOBS="$(jobs -p)"
-    [[ -z "$JOBS" ]] || kill $JOBS
-}
-trap finish EXIT
 
 # Make it so!
 "${COMMAND[@]}"
