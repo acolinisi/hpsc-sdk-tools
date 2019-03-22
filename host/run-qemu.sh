@@ -67,6 +67,11 @@ HPPS_NAND_OOB_SIZE=64 # bytes
 HPPS_NAND_ECC_SIZE=12 # bytes
 HPPS_NAND_PAGES_PER_BLOCK=64 # bytes
 
+# Qemu CPU indexes, used to identify the memory view for loader
+CPU_TRCH=0
+CPU_RTPS=1
+CPU_HPPS=4
+
 # Environment settings (paths to build artifacts and tools and the default
 # settings defined above) may be overriden by placing the file at multiple
 # locations (vars in later files override vars in earlier files):
@@ -458,12 +463,12 @@ then
     # Qemu loads the images directly into DRAM upon startup of the machine (not
     # possible on real HW).
     COMMAND+=(
-        -device "loader,addr=${RTPS_BL_ADDR},file=${RTPS_BL},force-raw,cpu-num=1"
-        -device "loader,addr=${RTPS_APP_ADDR},file=${RTPS_APP},force-raw,cpu-num=1"
-        -device "loader,addr=${HPPS_FW_ADDR},file=${HPPS_FW},force-raw,cpu-num=4"
-        -device "loader,addr=${HPPS_BL_ADDR},file=${HPPS_BL},force-raw,cpu-num=4"
-        -device "loader,addr=${HPPS_DT_ADDR},file=${HPPS_DT},force-raw,cpu-num=4"
-        -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=4")
+        -device "loader,addr=${RTPS_BL_ADDR},file=${RTPS_BL},force-raw,cpu-num=${CPU_RTPS}"
+        -device "loader,addr=${RTPS_APP_ADDR},file=${RTPS_APP},force-raw,cpu-num=${CPU_RTPS}"
+        -device "loader,addr=${HPPS_FW_ADDR},file=${HPPS_FW},force-raw,cpu-num=${CPU_HPPS}"
+        -device "loader,addr=${HPPS_BL_ADDR},file=${HPPS_BL},force-raw,cpu-num=${CPU_HPPS}"
+        -device "loader,addr=${HPPS_DT_ADDR},file=${HPPS_DT},force-raw,cpu-num=${CPU_HPPS}"
+        -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=${CPU_HPPS}")
 fi
 
 HPPS__ROOTFS_LOC=$(syscfg_get HPPS rootfs_loc)
@@ -471,17 +476,17 @@ if [ $? -ne 0 ]; then echo "ERROR: syscfg_get failed" && exit 1; fi
 
 if [ "$HPPS__ROOTFS_LOC" = "HPPS_DRAM" ]
 then
-    COMMAND+=(-device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=4")
+    COMMAND+=(-device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=${CPU_HPPS}")
 fi
 
 if [[ ! -z "${HPPS_RAMOOPS}" && ! -z "${HPPS_RAMOOPS_ADDR}" ]]
 then
-    COMMAND+=(-device "loader,addr=${HPPS_RAMOOPS_ADDR},file=${HPPS_RAMOOPS},force-raw,cpu-num=4")
+    COMMAND+=(-device "loader,addr=${HPPS_RAMOOPS_ADDR},file=${HPPS_RAMOOPS},force-raw,cpu-num=${CPU_HPPS}")
 fi
 
 # Storing TRCH code in NV mem is not yet supported, so it is loaded directly
 # into TRCH SRAM by Qemu's ELF loader on machine startup
-COMMAND+=(-device "loader,file=${TRCH_APP},cpu-num=0")
+COMMAND+=(-device "loader,file=${TRCH_APP},cpu-num=${CPU_TRCH}")
 
 echo "Final Command (one arg per line):"
 for arg in ${COMMAND[*]}
