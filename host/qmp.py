@@ -15,7 +15,7 @@ parser.add_argument('port', type=int,
 parser.add_argument('cmd',
     help='Command to execute')
 parser.add_argument('args', nargs="*",
-    help='Arguments to the command')
+    help='Arguments to the command (name=value, where value is quoted for string type)')
 parser.add_argument('--quiet', '-q', action='store_true',
     help='Do not print any diagnostic information, only the output')
 args = parser.parse_args()
@@ -27,29 +27,30 @@ reply = cl.read_until("\r\n")
 cl.write('{"execute": "qmp_capabilities"}')
 reply = cl.read_until("\r\n")
 
-req = '{"execute": "%s"}' % args.cmd
+arg_str = ""
+for arg in args.args:
+    key, val = arg.split('=')
+
+    # JSON does not support hex, but let's support it here
+    if val.startswith("0x"):
+        val = str(int(val, 16))
+
+    if len(arg_str) > 0:
+        arg_str += ",\n"
+    arg_str += '        "%s": %s' % (key, val)
+
+req = """
+{
+    "execute": "%s",
+    "arguments": {
+%s
+    }
+}
+""" % (args.cmd, arg_str)
+
 if not args.quiet:
     print req
 cl.write(req)
 reply = cl.read_until("\r\n")
 
-if not args.quiet:
-    print reply
-
-if args.cmd == "query-chardev":
-    reply_json = json.loads(reply)
-    cdevs = reply_json[u"return"]
-
-    fnames = {}
-    for cdev in cdevs:
-            fnames[cdev[u"label"]] = cdev[u"filename"]
-    #pprint.pprint(fnames)
-
-    for label in args.args:
-            fname = fnames[label]
-            fname = fname.replace(u"pty:", u"")
-            print(fname),
-elif args.cmd == "cont":
-    pass # nothing to do
-else:
-    raise Exception('unknown command: %s' % args.cmd);
+print reply

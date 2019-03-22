@@ -1,0 +1,30 @@
+#!/usr/bin/python
+
+import sys
+import argparse
+import json
+import pprint
+
+parser = argparse.ArgumentParser(
+    description="Extract paths from Qemu QMP response to query-chardev cmd")
+parser.add_argument('args', nargs="+",
+    help='Character devices for which to print paths')
+
+args = parser.parse_args()
+
+reply = sys.stdin.read()
+reply_json = json.loads(reply)
+#pprint.pprint(reply_json)
+cdevs = reply_json[u"return"]
+
+fnames = {}
+for cdev in cdevs:
+        fnames[cdev[u"label"]] = cdev[u"filename"]
+#pprint.pprint(fnames)
+
+for label in args.args:
+        fname = fnames[label]
+        if not fname.startswith("pty:"):
+            raise Exception("Chardev backend is not a PTY: %s" % fname)
+        fname = fname.replace(u"pty:", u"")
+        print(fname),

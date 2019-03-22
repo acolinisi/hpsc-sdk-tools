@@ -193,13 +193,19 @@ function setup_screen()
     fi
 }
 
+function serial_ptys()
+{
+    ${HPSC_HOST_UTILS_DIR}/qmp.py -q localhost $QMP_PORT query-chardev | \
+        qemu-chardev-ptys ${SERIAL_PORTS[*]}
+}
+
 function attach_consoles()
 {
     echo "Waiting for Qemu to open QMP port and to query for PTY paths..."
     #while test $(lsof -ti :$QMP_PORT | wc -l) -eq 0
     while true
     do
-        PTYS=$(${HPSC_HOST_UTILS_DIR}/qmp.py -q localhost $QMP_PORT query-chardev ${SERIAL_PORTS[*]} 2>/dev/null)
+        PTYS=$(serial_ptys 2>/dev/null)
         if [ -z "$PTYS" ]
         then
             #echo "Waiting for Qemu to open QMP port..."
@@ -209,7 +215,8 @@ function attach_consoles()
             then
                 echo "ERROR: failed to get PTY paths from Qemu via QMP port: giving up."
                 echo "Here is what happened when we tried to get the PTY paths:"
-                run ${HPSC_HOST_UTILS_DIR}/qmp.py -q localhost $QMP_PORT query-chardev ${SERIAL_PORTS[*]}
+                set -x
+                serial_ptys
                 exit # give up to not accumulate waiting processes
             fi
         else
