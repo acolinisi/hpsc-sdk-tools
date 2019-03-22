@@ -482,6 +482,8 @@ function finish {
     then
         rm "$GDB_CMD_FILE"
     fi
+    local JOBS="$(jobs -p)"
+    [[ -z "$JOBS" ]] || kill $JOBS
 }
 trap finish EXIT
 
