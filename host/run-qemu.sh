@@ -474,6 +474,11 @@ then
     COMMAND+=(-device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=4")
 fi
 
+if [[ ! -z "${HPPS_RAMOOPS}" && ! -z "${HPPS_RAMOOPS_ADDR}" ]]
+then
+    COMMAND+=(-device "loader,addr=${HPPS_RAMOOPS_ADDR},file=${HPPS_RAMOOPS},force-raw,cpu-num=4")
+fi
+
 # Storing TRCH code in NV mem is not yet supported, so it is loaded directly
 # into TRCH SRAM by Qemu's ELF loader on machine startup
 COMMAND+=(-device "loader,file=${TRCH_APP},cpu-num=0")
