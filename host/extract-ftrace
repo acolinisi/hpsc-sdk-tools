@@ -1,0 +1,77 @@
+#!/bin/bash
+
+set -e
+
+function finish {
+    local JOBS="$(jobs -p)"
+    [[ -z "$JOBS" ]] || kill $JOBS
+}
+trap finish EXIT
+
+run() {
+    echo "$@"
+    $@
+}
+
+run_bg() {
+    echo "$@ &"
+    $@ &
+}
+
+if [ "$#" -lt 1 ]
+then
+    echo "Usage: $0 ftrace-output-file" 1>&2
+    exit 1
+fi
+
+FTRACE_OUT=$1
+
+# The following (env file, and adr settings) are specific to the target OS,
+# could be parametrized via CLI and per-OS env files.
+
+EXTRACTOR_ENV=$HPSC_ROOT/hpsc-utils/conf/qemu-env-ftrace-extractor.sh
+if [ ! -f "$EXTRACTOR_ENV" ]
+then
+    echo "Error: extract env file not found: $EXTRACTOR_ENV" 1>&2
+    echo "       Is HPSC_ROOT env var set?" 1>&2
+    exit 1
+fi
+
+source $EXTRACTOR_ENV
+
+RAMOOPS_ADDR=$HPPS_RAMOOPS_ADDR
+RAMOOPS_SIZE=$HPPS_RAMOOPS_SIZE
+RAMOOPS_FILE=$HPPS_RAMOOPS
+
+
+# Intermediate and internal files
+EXTRACTOR_LOG=qemu-extractor.log
+
+# Qemu instance ID
+TARGET_ID=0
+EXTRACTOR_ID=7
+
+# from run-qemu.sh; alternatively could parse run-qemu.sh output
+PORT_BASE=$((1024 + $(id -u) + 1000))
+MAX_INSTANCES=8
+QMP_PORT_IDX=0
+TARGET_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $TARGET_ID))
+EXTRACTOR_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $EXTRACTOR_ID))
+
+run qmp.py 127.0.0.1 $TARGET_QMP_PORT memsave \
+    val=$RAMOOPS_ADDR size=$RAMOOPS_SIZE filename=\"$RAMOOPS_FILE\"
+
+run_bg run-qemu.sh -e $EXTRACTOR_ENV -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
+
+# Show the screen sessions to the user
+sleep 5
+grep screen $EXTRACTOR_LOG
+
+# Easier to ask the user than to try to capture and parse output from the
+# screen session. Also doubles as a mechanism for waiting until booted.
+echo
+echo -n "Enter size of copied data in bytes from dd output inside extractor instance: "
+read FTRACE_LEN
+
+run qmp.py 127.0.0.1 $EXTRACTOR_QMP_PORT memsave \
+    val=$HPPS_GPBUF_ADDR size=$FTRACE_LEN filename=\"$FTRACE_OUT\"
