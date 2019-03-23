@@ -42,6 +42,7 @@ source $EXTRACTOR_ENV
 RAMOOPS_ADDR=$HPPS_RAMOOPS_ADDR
 RAMOOPS_SIZE=$HPPS_RAMOOPS_SIZE
 RAMOOPS_FILE=$HPPS_RAMOOPS
+CPU=4
 
 
 # Intermediate and internal files
@@ -58,8 +59,8 @@ QMP_PORT_IDX=0
 TARGET_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $TARGET_ID))
 EXTRACTOR_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $EXTRACTOR_ID))
 
-run qmp.py 127.0.0.1 $TARGET_QMP_PORT memsave \
-    val=$RAMOOPS_ADDR size=$RAMOOPS_SIZE filename=\"$RAMOOPS_FILE\"
+run qmp.py 127.0.0.1 $TARGET_QMP_PORT pmemsave \
+    val=$RAMOOPS_ADDR size=$RAMOOPS_SIZE filename=\"$RAMOOPS_FILE\" cpu-index=$CPU
 
 run_bg run-qemu.sh -q -e $EXTRACTOR_ENV -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
 
@@ -73,5 +74,5 @@ echo
 echo -n "Enter size of copied data in bytes from dd output inside extractor instance: "
 read FTRACE_LEN
 
-run qmp.py 127.0.0.1 $EXTRACTOR_QMP_PORT memsave \
-    val=$HPPS_GPBUF_ADDR size=$FTRACE_LEN filename=\"$FTRACE_OUT\"
+run qmp.py 127.0.0.1 $EXTRACTOR_QMP_PORT pmemsave \
+    val=$HPPS_GPBUF_ADDR size=$FTRACE_LEN filename=\"$FTRACE_OUT\" cpu-index=$CPU
