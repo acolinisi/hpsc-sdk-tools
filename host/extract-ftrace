@@ -29,7 +29,7 @@ FTRACE_OUT=$1
 # The following (env file, and adr settings) are specific to the target OS,
 # could be parametrized via CLI and per-OS env files.
 
-EXTRACTOR_ENV=$HPSC_ROOT/hpsc-utils/conf/qemu-env-ftrace-extractor.sh
+EXTRACTOR_ENV=$HPSC_ROOT/hpsc-utils/conf/hpps/ftrace-extractor/qemu-env.sh
 if [ ! -f "$EXTRACTOR_ENV" ]
 then
     echo "Error: extract env file not found: $EXTRACTOR_ENV" 1>&2
