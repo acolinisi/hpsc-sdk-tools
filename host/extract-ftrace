@@ -61,7 +61,7 @@ EXTRACTOR_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $EXTRACTOR_I
 run qmp.py 127.0.0.1 $TARGET_QMP_PORT memsave \
     val=$RAMOOPS_ADDR size=$RAMOOPS_SIZE filename=\"$RAMOOPS_FILE\"
 
-run_bg run-qemu.sh -e $EXTRACTOR_ENV -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
+run_bg run-qemu.sh -q -e $EXTRACTOR_ENV -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
 
 # Show the screen sessions to the user
 sleep 5
