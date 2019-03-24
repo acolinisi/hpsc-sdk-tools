@@ -18,6 +18,10 @@ run_bg() {
     $@ &
 }
 
+num() {
+    echo $1 | sed 's/_//g'
+}
+
 if [ "$#" -lt 1 ]
 then
     echo "Usage: $0 ftrace-output-file" 1>&2
@@ -60,7 +64,8 @@ TARGET_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $TARGET_ID))
 EXTRACTOR_QMP_PORT=$(($PORT_BASE + $QMP_PORT_IDX * $MAX_INSTANCES + $EXTRACTOR_ID))
 
 run qmp.py 127.0.0.1 $TARGET_QMP_PORT pmemsave \
-    val=$RAMOOPS_ADDR size=$RAMOOPS_SIZE filename=\"$RAMOOPS_FILE\" cpu-index=$CPU
+    val=$(num $RAMOOPS_ADDR) size=$(num $RAMOOPS_SIZE) \
+    filename=\"$RAMOOPS_FILE\" cpu-index=$CPU
 
 run_bg run-qemu.sh -q -e $EXTRACTOR_ENV -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
 
@@ -75,4 +80,5 @@ echo -n "Enter size of copied data in bytes from dd output inside extractor inst
 read FTRACE_LEN
 
 run qmp.py 127.0.0.1 $EXTRACTOR_QMP_PORT pmemsave \
-    val=$HPPS_GPBUF_ADDR size=$FTRACE_LEN filename=\"$FTRACE_OUT\" cpu-index=$CPU
+    val=$(num $HPPS_GPBUF_ADDR) size=$(num $FTRACE_LEN) \
+    filename=\"$FTRACE_OUT\" cpu-index=$CPU
