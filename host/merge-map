@@ -1,0 +1,32 @@
+#!/usr/bin/python2
+
+import sys
+import argparse
+from collections import OrderedDict
+
+parser = argparse.ArgumentParser(
+    description="Merge memory maps, output to stdout")
+parser.add_argument('input', nargs='+',
+    help='Input files with memory maps to merge')
+args = parser.parse_args()
+
+d = OrderedDict()
+for f in args.input:
+    fin = open(f, "r")
+    line_num = 0
+    for line in fin:
+        line = line.strip()
+        if len(line) == 0 or line.startswith('#'):
+            continue
+        tok = line.split()
+        if len(tok) < 3:
+            raise Exception("syntax error on line: %u" % line_num)
+        k = tok[0]
+        addr = tok[1]
+        fname = "\t".join(tok[2:])
+        d[k] = (addr, fname)
+        line_num += 1
+    fin.close()
+
+for k in d:
+    sys.stdout.write(k + "\t" + "\t".join(d[k]) + "\n")
