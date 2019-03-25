@@ -45,6 +45,7 @@ SYSCFG_ADDR=0x000ff000 # in TRCH SRAM
 HPPS_FW_ADDR=0x80000000
 HPPS_BL_ADDR=0x80020000
 # HPPS_BL_DT_ADDR=$HPPS_BL_ADDR + sizeof($HPPS_BL) # calculated below
+HPPS_BL_ENV_ADDR=0x8005f000
 HPPS_DT_ADDR=0x80060000
 HPPS_KERN_ADDR=0x80064000
 HPPS_INITRAMFS_ADDR=0x80464000
@@ -107,6 +108,7 @@ function create_lsio_smc_sram_port_image()
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${RTPS_APP}"     "rtps-os" ${RTPS_APP_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL}"      "hpps-bl" ${HPPS_BL_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL_DT}"   "hpps-bl-dt" ${HPPS_BL_DT_ADDR}
+    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL_ENV}"  "hpps-bl-env" ${HPPS_BL_ENV_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_FW}"      "hpps-fw" ${HPPS_FW_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_DT}"      "hpps-dt" ${HPPS_DT_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_KERN}"    "hpps-os" ${HPPS_KERN_ADDR}
@@ -491,6 +493,7 @@ then
         -device "loader,addr=${HPPS_FW_ADDR},file=${HPPS_FW},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_BL_ADDR},file=${HPPS_BL},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_BL_DT_ADDR},file=${HPPS_BL_DT},force-raw,cpu-num=${CPU_HPPS}"
+        -device "loader,addr=${HPPS_BL_ENV_ADDR},file=${HPPS_BL_ENV},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_DT_ADDR},file=${HPPS_DT},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=${CPU_HPPS}")
 fi
