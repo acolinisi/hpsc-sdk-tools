@@ -102,7 +102,7 @@ do
     then
         REF_SEG_ADDR=${SEGMENT_ADDRS[${REF_SEG}]}
         REF_SEG_FILE=${SEGMENT_FILES[${REF_SEG}]}
-        ADDR=$(($REF_SEG_ADDR + $(printf "0x%x" $(stat -c '%s' $REF_SEG_FILE))))
+        ADDR=$(printf '0x%x' $(($REF_SEG_ADDR + $(stat -c '%s' $REF_SEG_FILE))))
     else
         ADDR=$(parse_addr ${ADDR_SPEC})
     fi
