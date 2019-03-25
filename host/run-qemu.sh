@@ -76,11 +76,13 @@ CPU_HPPS=4
 # settings defined above) may be overriden by placing the file at multiple
 # locations (vars in later files override vars in earlier files):
 QEMU_ENV=qemu-env.sh
+SCRIPT_DIR="$(dirname "$0")"
+CONF_DIR="${SCRIPT_DIR}/../conf"
+CONF_QEMU_ENV=qemu/$QEMU_ENV
 
-source_if_exists "$(dirname "$0")/$QEMU_ENV"
-source_if_exists "$(dirname "$0")/../conf/$QEMU_ENV"
-source_if_exists "$HPSC_ROOT/$QEMU_ENV"
-source_if_exists "$PWD/$QEMU_ENV"
+# More added later in this script
+ENV_FILES=("${SCRIPT_DIR}/${QEMU_ENV}"
+            "${CONF_DIR}/base/${CONF_QEMU_ENV}")
 
 function nand_blocks() {
     local size=$1
@@ -169,11 +171,11 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-e env]  [-n netcfg] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-p prof]  [-n netcfg] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
-    echo "               -e env: additional environment settings file to load" 1>&2
+    echo "               -p profile: configuration profile to run" 1>&2
     echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
@@ -277,20 +279,21 @@ setup_console()
     attach_consoles &
 }
 
+# defaults
 RESET=1
 NET=user
 ID=0
 MONITOR=1
+PROFILE=default
 
 # parse options
-while getopts "h?S?q?e:n:i:" o; do
+while getopts "h?S?q?p:n:i:" o; do
     case "${o}" in
         S)
             RESET=0
             ;;
-        e)
-            echo Loading env from: $OPTARG
-            source "$OPTARG"
+        p)
+            PROFILE="$OPTARG"
             ;;
         i)
             ID="$OPTARG"
@@ -317,6 +320,22 @@ if [ -z "${CMD}" ]
 then
     CMD="run"
 fi
+
+PROF_DIR=${CONF_DIR}/prof/${PROFILE}
+if [ ! -d "${PROF_DIR}" ]
+then
+    echo "ERROR: proflie ${PROFILE} not found at: ${PROF_DIR}" 1>&2
+    exit 1
+fi
+
+ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}"
+            "${PWD}/${QEMU_ENV}")
+
+for qemu_env in "${ENV_FILES[@]}"
+do
+   echo QEMU ENV ${qemu_env}
+    source_if_exists ${qemu_env}
+done
 
 # Privatize generated files, ports, screen sessions for this Qemu instance
 
