@@ -26,6 +26,10 @@ parse_addr() {
     echo $1 | sed 's/_//g'
 }
 
+hex() {
+    printf "0x%x" $1
+}
+
 usage() {
     echo "Usage: $(basename $0) [-hl] map_file output_file"
     echo "       -l : only list input files"
@@ -102,7 +106,7 @@ do
     then
         REF_SEG_ADDR=${SEGMENT_ADDRS[${REF_SEG}]}
         REF_SEG_FILE=${SEGMENT_FILES[${REF_SEG}]}
-        ADDR=$(printf '0x%x' $(($REF_SEG_ADDR + $(stat -c '%s' $REF_SEG_FILE))))
+        ADDR=$(hex $(($REF_SEG_ADDR + $(stat -c '%s' $REF_SEG_FILE))))
     else
         ADDR=$(parse_addr ${ADDR_SPEC})
     fi
@@ -142,7 +146,11 @@ do
     fi
 
     OFFSET=$(($ADDR - $BASE_ADDR))
-    run dd if=$IN_FILE of=$OUT_FILE bs=$BLOCK_SIZE seek=$(($OFFSET/$BLOCK_SIZE)) conv=notrunc
+
+    SEEK=$(($OFFSET/$BLOCK_SIZE))
+    # dd doesn't accept hex, but we want a hex printout
+    echo DD off=$(hex $OFFSET) bs=$(hex $BLOCK_SIZE) seek=$(hex $SEEK) if=$IN_FILE
+    run dd if=$IN_FILE of=$OUT_FILE bs=$BLOCK_SIZE seek=$SEEK conv=notrunc
     line_num=$(($line_num + 1))
 done < $MAP_FILE
 
