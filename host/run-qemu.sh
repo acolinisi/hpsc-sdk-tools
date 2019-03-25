@@ -44,6 +44,7 @@ SYSCFG_ADDR=0x000ff000 # in TRCH SRAM
 
 HPPS_FW_ADDR=0x80000000
 HPPS_BL_ADDR=0x80020000
+# HPPS_BL_DT_ADDR=$HPPS_BL_ADDR + sizeof($HPPS_BL) # calculated below
 HPPS_DT_ADDR=0x80060000
 HPPS_KERN_ADDR=0x80064000
 HPPS_INITRAMFS_ADDR=0x80464000
@@ -105,6 +106,7 @@ function create_lsio_smc_sram_port_image()
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${RTPS_BL}"      "rtps-bl" ${RTPS_BL_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${RTPS_APP}"     "rtps-os" ${RTPS_APP_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL}"      "hpps-bl" ${HPPS_BL_ADDR}
+    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL_DT}"   "hpps-bl-dt" ${HPPS_BL_DT_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_FW}"      "hpps-fw" ${HPPS_FW_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_DT}"      "hpps-dt" ${HPPS_DT_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_KERN}"    "hpps-os" ${HPPS_KERN_ADDR}
@@ -337,6 +339,8 @@ do
     source_if_exists ${qemu_env}
 done
 
+HPPS_BL_DT_ADDR=$(printf "0x%x" $((${HPPS_BL_ADDR} + $(stat -c %s ${HPPS_BL}) )))
+
 # Privatize generated files, ports, screen sessions for this Qemu instance
 
 SYSCFG_BIN=syscfg.bin.${ID}
@@ -486,6 +490,7 @@ then
         -device "loader,addr=${RTPS_APP_ADDR},file=${RTPS_APP},force-raw,cpu-num=${CPU_RTPS}"
         -device "loader,addr=${HPPS_FW_ADDR},file=${HPPS_FW},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_BL_ADDR},file=${HPPS_BL},force-raw,cpu-num=${CPU_HPPS}"
+        -device "loader,addr=${HPPS_BL_DT_ADDR},file=${HPPS_BL_DT},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_DT_ADDR},file=${HPPS_DT},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=${CPU_HPPS}")
 fi
