@@ -74,6 +74,9 @@ fi
 # Only for dd internals, does not affect the output
 BLOCK_SIZE=4096
 
+declare -A SEGMENT_ADDRS
+declare -A SEGMENT_FILES
+
 BASE_ADDR=
 SIZE=
 line_num=0
@@ -85,14 +88,26 @@ do
     fi
 
     KEY=$(extract_word 0 $line)
-    ADDR=$(parse_addr $(extract_word 1 $line))
+    ADDR_SPEC=$(extract_word 1 $line)
     TOK2=$(parse_addr $(extract_word 2 $line))
 
-    if [[ -z "$ADDR" || -z "$TOK2" ]]
+    if [[ -z "$ADDR_SPEC" || -z "$TOK2" ]]
     then
         echo "ERROR: syntax error on line $line_num" 1>&2
         exit 2
     fi
+
+    REF_SEG=$(echo $ADDR_SPEC | sed -n 's/after(\([^)]\+\))/\1/p')
+    if [ ! -z "${REF_SEG}" ]
+    then
+        REF_SEG_ADDR=${SEGMENT_ADDRS[${REF_SEG}]}
+        REF_SEG_FILE=${SEGMENT_FILES[${REF_SEG}]}
+        ADDR=$(($REF_SEG_ADDR + $(printf "0x%x" $(stat -c '%s' $REF_SEG_FILE))))
+    else
+        ADDR=$(parse_addr ${ADDR_SPEC})
+    fi
+
+    SEGMENT_ADDRS["$KEY"]="$ADDR"
 
     if [ "$KEY" = "mem" ]
     then
@@ -107,6 +122,7 @@ do
     fi
 
     IN_FILE=$TOK2
+    SEGMENT_FILES["$KEY"]="$IN_FILE"
 
     if [ $LIST_ONLY -eq 1 ]
     then
