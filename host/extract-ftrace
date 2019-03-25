@@ -30,10 +30,12 @@ fi
 
 FTRACE_OUT=$1
 
+PROFILE=ftrace-extractor
+
 # The following (env file, and adr settings) are specific to the target OS,
 # could be parametrized via CLI and per-OS env files.
 
-EXTRACTOR_ENV=$HPSC_ROOT/hpsc-utils/conf/hpps/ftrace-extractor/qemu-env.sh
+EXTRACTOR_ENV=$HPSC_ROOT/hpsc-utils/conf/prof/$PROFILE/qemu/qemu-env.sh
 if [ ! -f "$EXTRACTOR_ENV" ]
 then
     echo "Error: extract env file not found: $EXTRACTOR_ENV" 1>&2
@@ -67,7 +69,7 @@ run qmp.py 127.0.0.1 $TARGET_QMP_PORT pmemsave \
     val=$(num $RAMOOPS_ADDR) size=$(num $RAMOOPS_SIZE) \
     filename=\"$RAMOOPS_FILE\" cpu-index=$CPU
 
-run_bg run-qemu.sh -q -e $EXTRACTOR_ENV -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
+run_bg run-qemu.sh -q -p $PROFILE -i $EXTRACTOR_ID 1>$EXTRACTOR_LOG 2>&1
 
 # Show the screen sessions to the user
 sleep 5
