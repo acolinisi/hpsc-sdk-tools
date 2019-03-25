@@ -84,20 +84,29 @@ do
         continue
     fi
 
-    if [ -z $BASE_ADDR ]
+    KEY=$(extract_word 0 $line)
+    ADDR=$(parse_addr $(extract_word 1 $line))
+    TOK2=$(parse_addr $(extract_word 2 $line))
+
+    if [[ -z "$ADDR" || -z "$TOK2" ]]
     then
-        BASE_ADDR=$(parse_addr $(extract_word 0 $line))
-        SIZE=$(extract_word 1 $line)
+        echo "ERROR: syntax error on line $line_num" 1>&2
+        exit 2
+    fi
+
+    if [ "$KEY" = "mem" ]
+    then
+        if [ ! -z "$BASE_ADD" ]
+        then
+            echo "ERROR: duplicate mem spec: line $line_num" 1>&2
+            exit 2
+        fi
+        BASE_ADDR=$ADDR
+        SIZE=$TOK2
         continue
     fi
 
-    ADDR=$(parse_addr $(extract_word 0 $line))
-    IN_FILE=$(extract_word 1 $line)
-    if [[ -z $ADDR || -z $IN_FILE ]]
-    then
-        echo "Invalid syntax in map file on line $line_num" 1>&2
-        exit 2
-    fi
+    IN_FILE=$TOK2
 
     if [ $LIST_ONLY -eq 1 ]
     then
@@ -107,9 +116,9 @@ do
 
     if [ -z $OUTPUT_READY ]
     then
-        if [ -z SIZE ]
+        if [ -z "$SIZE" ]
         then
-            echo "Failed to parse out memory size from first line" 1>&2
+            echo "ERROR: file specs begin before mem spec" 1>&2
             exit 2
         fi
         run truncate --size=$SIZE $OUT_FILE
