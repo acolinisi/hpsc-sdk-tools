@@ -288,7 +288,7 @@ RESET=1
 NET=user
 ID=0
 MONITOR=1
-PROFILE=default
+PROFILE=
 
 # parse options
 while getopts "h?S?q?p:n:i:" o; do
@@ -325,15 +325,18 @@ then
     CMD="run"
 fi
 
-PROF_DIR=${CONF_DIR}/prof/${PROFILE}
-if [ ! -d "${PROF_DIR}" ]
+if [[ ! -z "${PROFILE}" ]]
 then
-    echo "ERROR: proflie ${PROFILE} not found at: ${PROF_DIR}" 1>&2
-    exit 1
+    PROF_DIR=${CONF_DIR}/prof/${PROFILE}
+    if [ ! -d "${PROF_DIR}" ]
+    then
+        echo "ERROR: proflie ${PROFILE} not found at: ${PROF_DIR}" 1>&2
+        exit 1
+    fi
+    ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}")
 fi
 
-ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}"
-            "${PWD}/${QEMU_ENV}")
+ENV_FILES+=("${PWD}/${QEMU_ENV}")
 
 for qemu_env in "${ENV_FILES[@]}"
 do
