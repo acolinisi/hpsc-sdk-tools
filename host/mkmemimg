@@ -71,8 +71,8 @@ then
     shift
 fi
 
-# Only for dd internals, does not affect the output
-BLOCK_SIZE=4096
+# Note: dd seek will be at this granularity
+BLOCK_SIZE=4
 
 declare -A SEGMENT_ADDRS
 declare -A SEGMENT_FILES
