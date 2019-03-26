@@ -24,6 +24,11 @@ for f in args.input:
         k = tok[0]
         addr = tok[1]
         fname = "\t".join(tok[2:])
+        if k in d:
+            if addr == '*':
+                addr = d[k]["addr"]
+            if fname == '*':
+                fname = d[k]["fname"]
         d[k] = {"addr": addr, "fname": fname}
         line_num += 1
     fin.close()
