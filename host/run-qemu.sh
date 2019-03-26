@@ -286,7 +286,6 @@ setup_console()
 # defaults
 RESET=1
 NET=user
-ID=0
 MONITOR=1
 PROFILE=
 
@@ -300,7 +299,7 @@ while getopts "h?S?q?p:n:i:" o; do
             PROFILE="$OPTARG"
             ;;
         i)
-            ID="$OPTARG"
+            CLI_ID="$OPTARG"
             ;;
         n)
             NET="$OPTARG"
@@ -347,6 +346,18 @@ done
 HPPS_BL_DT_ADDR=$(printf "0x%x" $((${HPPS_BL_ADDR} + $(stat -c %s ${HPPS_BL}) )))
 
 # Privatize generated files, ports, screen sessions for this Qemu instance
+
+# Complexity only because env files were already sourced before CLI processing
+if [ ! -z "${CLI_ID}" ] # let CLI override
+then
+    ID=${CLI_ID}
+else
+    if [ -z "${ID}" ] # let env files already sourced above define it
+    then
+        ID=0
+    fi
+fi
+
 
 SYSCFG_BIN=syscfg.bin.${ID}
 TRCH_SRAM_FILE=trch_sram.bin.${ID}
