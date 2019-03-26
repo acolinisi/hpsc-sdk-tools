@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+import re
 from collections import OrderedDict
 
 parser = argparse.ArgumentParser(
@@ -22,7 +23,10 @@ for f in args.input:
         tok = line.split('=')
         k = tok[0]
         if len(tok) < 2:
-            raise Exception("syntax error on line: %u" % line_num)
+            raise Exception("line: %u: syntax error: not a key=value pair" % line_num)
+        if re.search(r"\s", k, ):
+            raise Exception("syntax error: line %u: invalid identifier: %s" \
+                % (line_num, k))
         v = "=".join(tok[1:])
         d[k] = v
         line_num += 1
