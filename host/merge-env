@@ -19,16 +19,23 @@ for f in args.input:
         line = line.strip()
         if len(line) == 0 or line.startswith('#'):
             continue
-        # k, v = line.split('=', maxsplit=1) # PY3
         tok = line.split('=')
-        k = tok[0]
+        v = "=".join(tok[1:]) # we only want one split (no maxsplit arg in PY2)
         if len(tok) < 2:
             raise Exception("line: %u: syntax error: not a key=value pair" % line_num)
-        if re.search(r"\s", k, ):
+        if re.match(r".*\+$", tok[0]):
+            k = tok[0][:-1]
+            append = True
+        else:
+            k = tok[0]
+            append = False
+        if re.search(r"\s", k):
             raise Exception("syntax error: line %u: invalid identifier: %s" \
                 % (line_num, k))
-        v = "=".join(tok[1:])
-        d[k] = v
+        if append:
+            d[k] += " " + v
+        else:
+            d[k] = v
         line_num += 1
     fin.close()
 
