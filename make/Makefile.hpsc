@@ -293,7 +293,7 @@ clean-hpps-busybox:
 	rm -f $(HPPS_BUSYBOX)/.config
 .PHONY: hpps-busybox clean-hpps-busybox
 
-$(BLD)/hpps/initramfs.cpio: | $(BLD)/hpps/
+$(BLD)/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD)/hpps/
 	$(call copy-initramfs,$(CONF_BASE)/hpps/initramfs)
 	$(call init-initramfs,$(CONF_BASE)/hpps/initramfs.sh)
 	$(call make-initramfs,$(HPPS_BUSYBOX),$(HPPS_BUSYBOX_ARGS))
@@ -381,7 +381,7 @@ $(BLD_PROF)/%/zebu/prof.hpps.mem.map: \
 	| $(BLD_PROF)/%/zebu/
 	$(TOOLS)/merge-map $^ > $@
 
-$(BLD_PROF)/%/hpps/initramfs.cpio: | $(BLD_PROF)/%/hpps/
+$(BLD_PROF)/%/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
 	$(call copy-initramfs,$(CONF_BASE)/hpps/initramfs)
 	[ ! -d "$(CONF_PROF)/$*/hpps/initramfs/" ] || \
 		$(call copy-initramfs,$(CONF_PROF)/$*/hpps/initramfs)
