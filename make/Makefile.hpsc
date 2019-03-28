@@ -61,16 +61,14 @@ addr=$(subst _,,$1)
 # e.g. including regeneration of config, if you want any other clean or partial
 # build, then use the build system of the respective component directly.
 
-all: sdk ssw
+all: qemu qdt target
+clean: clean-qemu clean-qdt clean-target
 
 sdk:
 	$(MAKE) -C $(SDK)
 sdk-%:
 	$(MAKE) -C $(SDK) $*
 .PHONY: sdk sdk-%
-
-ssw: qemu qdt target
-clean: clean-qemu clean-qdt clean-target
 
 target: trch rtps hpps
 clean-target: clean-trch clean-rtps clean-hpps

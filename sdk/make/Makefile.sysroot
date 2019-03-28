@@ -19,6 +19,8 @@
 # and/or system-provided packages are out-of-date and no updates are
 # available).
 
+all: tools libs py env
+
 BLD=bld
 
 # Actual sysroot will be created here
@@ -49,7 +51,23 @@ PYTHON_VER=$(shell $(PYTHON) -V 2>&1 | cut -d' ' -f2 | cut -d'.' -f1-2)
 PYTHON_SITE_REL=$(PREFIX)/lib/python$(PYTHON_VER)/site-packages
 PYTHON_SITE=$(abspath $(PYTHON_SITE_REL))
 
-all: tools libs py
+define ENV=
+# Auto-generated SDK environment file
+HPREFIX=$(abspath $(SYSROOT))/usr
+export PATH=$$HPREFIX/sbin:$$HPREFIX/bin:$$PATH
+export PYTHONPATH=$$HPREFIX/lib/python$(PYTHON_VER)/site-packages:$$PYTHONPATH
+export LD_LIBRARY_PATH=$$HPREFIX/lib64:$$HPREFIX/lib
+export PKG_CONFIG_PATH=$$HPREFIX/lib64/pkgconfig:$$HPREFIX/lib/pkgconfig
+endef
+
+ENV_FILE=$(BLD)/env.sh
+env: $(ENV_FILE)
+$(ENV_FILE): export ENV_SH=$(ENV)
+$(ENV_FILE):
+	@echo "$$ENV_SH" > $@
+clean-env:
+	rm -f $(ENV_FILE)
+.PHONY: env clean-env
 
 # Note: the identifiers need to be unique across this whole file, including
 # across separate categories, but the tarballs and build directories may have
@@ -188,7 +206,7 @@ fetch: $(foreach d,$(DEPS),$(FETCH)/$(TARBALL_$(d)))
 	mkdir -p $@
 
 # don't clean fetched tarballs unless explicitly requested
-clean: clean-sysroot clean-bld
+clean: clean-sysroot clean-env clean-bld
 clean-%: clean-bld-%
 .PHONY: clean clean-%
 
