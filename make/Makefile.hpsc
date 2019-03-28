@@ -3,6 +3,7 @@ QEMU=qemu
 QEMU_DT=qemu-devicetrees
 HPSC_UTILS=hpsc-utils
 TOOLS=$(HPSC_UTILS)/host
+RECIPES=$(HPSC_UTILS)/make
 CONF=$(HPSC_UTILS)/conf
 CONF_ZEBU=$(CONF)/zebu/hpps
 CONF_PROF=$(CONF)/prof
@@ -20,6 +21,8 @@ RTPS_R52_UBOOT=$(RTPS_R52)/u-boot
 RTPS_A53_UBOOT=$(RTPS_A53)/u-boot
 RTPS_A53_ATF=$(RTPS_A53)/arm-trusted-firmware
 BARE_METAL=hpsc-baremetal
+
+SDK=sdk
 
 # Directory for artifacts created by this top-level build
 BLD=bld
@@ -58,7 +61,15 @@ addr=$(subst _,,$1)
 # e.g. including regeneration of config, if you want any other clean or partial
 # build, then use the build system of the respective component directly.
 
-all: qemu qdt target
+all: sdk ssw
+
+sdk:
+	$(MAKE) -C $(SDK)
+sdk-%:
+	$(MAKE) -C $(SDK) $*
+.PHONY: sdk sdk-%
+
+ssw: qemu qdt target
 clean: clean-qemu clean-qdt clean-target
 
 target: trch rtps hpps

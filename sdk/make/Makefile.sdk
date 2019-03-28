@@ -1,0 +1,27 @@
+SYSROOT=sysroot
+
+# Nothing to make in the default build so far
+all:
+clean:
+
+# Not part of default build
+sysroot:
+	$(MAKE) -C $(SYSROOT)
+sysroot-%:
+	$(MAKE) -C $(SYSROOT) $*
+.PHONY: sysroot sysroot-%
+
+deps-centos:
+	yum install -y https://centos7.iuscommunity.org/ius-release.rpm
+	yum update
+	yum group install "Development Tools"
+	yum install java git gtk3 chrpath texinfo screen glib2-devel libfdt-devel \
+		pixman-devel zlib-devel uboot-tools bc ncurses-devel python-configparser \
+		python36u python36u-libs python36u-devel python36u-pip pax
+	ln -sf /usr/bin/python3.6 /usr/bin/python3
+	yum install cairo-devel cairo-gobject-devel gobject-introspection-devel \
+		pygobject2 pygboject2-devel
+
+deps-sysroot: sysroot
+	echo -e "To use the dependencies in the built sysroot:\n" \
+	     "    source hpsc-utils/sdk/env.sh"
