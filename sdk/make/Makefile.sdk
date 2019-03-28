@@ -26,7 +26,7 @@ ENV_FILE=$(BLD)/env.sh
 env: $(ENV_FILE)
 $(ENV_FILE): export ENV_SH=$(ENV)
 $(ENV_FILE):
-	@echo "$$ENV_SH" > $@
+	echo "$$ENV_SH" > $@
 clean-env:
 	rm -f $(ENV_FILE)
 .PHONY: env clean-env
