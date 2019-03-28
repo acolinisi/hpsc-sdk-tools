@@ -77,7 +77,7 @@ define extract-rule
 $(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(TC)/
 	$(TAR) -C $(2) -x -f $$<
 	touch $$@
-$(1) : $(2)/$(DIR_$(1))
+$(1) : | $(2)/$(DIR_$(1))
 endef
 
 $(foreach d,$(DEPS),$(eval $(call fetch-rule,$(d))))
