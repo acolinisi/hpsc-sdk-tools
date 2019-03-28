@@ -178,7 +178,7 @@ $(foreach p,$(DEPS_PY),\
 
 # Artifacts in order to be able to define a dep tree (required for each dep)
 ART_attr=$(PC)/libattr.pc
-ART_libcap2=$(PC64)/libcap2.pc
+ART_libcap2=$(PC64)/libcap.pc
 ART_util_linux=$(PC)/mount.pc
 ART_pcre=$(PC)/libpcre.pc
 ART_libffi=$(PC)/libffi.pc
