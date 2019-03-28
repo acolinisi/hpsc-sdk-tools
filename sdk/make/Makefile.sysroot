@@ -36,8 +36,6 @@ BIN=$(PREFIX)/bin
 PC=$(PREFIX)/lib/pkgconfig
 PC64=$(PREFIX)/lib64/pkgconfig
 
-PC_PATH=$(HPREFIX)/lib64/pkgconfig:$(HPREFIX)/lib/pkgconfig
-
 # Tools required for building the SDK:
 # ... provided by the system
 WGET=wget
@@ -270,8 +268,15 @@ $(foreach d,$(DEPS),$(eval $(d): $(ART_$(d))))
 # Define per-target DIR to allow recipies to be more concise
 $(foreach d,$(DEPS),$(eval $(ART_$(d)): DIR=$(WORK)/$(DIR_$(d))))
 
+# Env vars usually respected by autoconf configure script
+SYSROOT_VARS=\
+	PKG_CONFIG_PATH=$(HPREFIX)/lib64/pkgconfig:$(HPREFIX)/lib/pkgconfig \
+	LD_LIBRARY_PATH=$(HPREFIX)/lib64:$(HPREFIX)/lib \
+	CFLAGS+=-I$(HPREFIX)/include \
+	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib" \
+
 $(ART_attr):
-	cd $(DIR) && ./configure --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 $(ART_libcap2): $(ART_attr)
@@ -279,44 +284,40 @@ $(ART_libcap2): $(ART_attr)
 		RAISE_SETFCAP=no install \
 
 $(ART_fakeroot): $(ART_libcap2)
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) \
-		CPPFLAGS+=-I$(HPREFIX)/include ./configure --prefix=$(HPREFIX) 
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) 
 	$(MAKE) -C $(DIR) install
 
 $(ART_util_linux): $(ART_fakeroot)
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) ./configure --prefix=$(HPREFIX) \
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 			--with-bashcompletiondir=$(HPREFIX)/share/bash-completions
 	$(MAKE) -C $(DIR)
 	$(FAKEROOT) $(MAKE) -C $(DIR) install
 
 $(ART_pcre):
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) \
-		./configure --prefix=$(HPREFIX) --enable-utf --enable-unicode-properties
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
+		--enable-utf --enable-unicode-properties
 	$(MAKE) -C $(DIR) install
 
 $(ART_libffi):
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) \
-		./configure --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 $(ART_glib): $(ART_libffi) $(ART_pcre) $(ART_util_linux)
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) \
-		CPPFLAGS+=-I$(HPREFIX)/include LDFLAGS+="-L$(HPREFIX)/lib -L$(HPREFIX)/lib64" \
-			./configure --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 $(ART_pixman):
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) ./configure --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	make -C $(DIR) install
 
 $(ART_ncurses):
-	cd $(DIR) && ./configure --prefix=$(HPREFIX) \
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 		--with-pkg-config-libdir=$(HPREFIX)/lib/pkgconfig \
 		--enable-pc-files --with-shared --without-ada
 	$(MAKE) -C $(DIR) install
 
 $(ART_openssl):
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) ./config --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./config --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR)
 	$(MAKE) -C $(DIR) install
 
@@ -324,11 +325,11 @@ $(ART_dtc):
 	$(MAKE) -C $(DIR) NO_PYTHON=1 PREFIX=$(HPREFIX) install
 
 $(ART_screen): $(ART_ncurses)
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) ./configure --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 $(ART_git):
-	cd $(DIR) && PKG_CONFIG_PATH=$(PC_PATH) ./configure --prefix=$(HPREFIX)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 # Bootstrapping does not appear to be necessary
