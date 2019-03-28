@@ -1,15 +1,20 @@
 SYSROOT=sysroot
+QEMU=qemu
+QEMU_DT=qemu-devicetrees
 
 BLD=bld
+BLD_TO_ROOT=..
 FETCH=$(BLD)/fetch
 TC=$(BLD)/tc
+BLD_QEMU=$(BLD)/qemu
+BLD_QEMU_TO_ROOT=$(BLD_TO_ROOT)/..
 
 # Host tools needed to build the SDK (not including deps of nested builds)
 WGET=wget
 TAR=tar
 
-all: toolchains env
-clean: clean-toolchains clean-env
+all: toolchains env qemu qemu-dt
+clean: clean-toolchains clean-env clean-qemu clean-qemu-dt
 
 # Prerequisites added to this rule dynamically
 fetch:
@@ -98,3 +103,30 @@ deps-centos7: toolchains env
 
 deps-sysroot: sysroot toolchains env
 	@echo 'source $(abspath $(SYSROOT)/bld/env.sh)' >> $(ENV_FILE)
+
+# Components of the SDK that are built from source
+
+# Build Qemu s.t. its GDB stub points to the given target CPU cluster:
+# TRCH=0, RTPS_R52=1, RTPS_A53=2, HPPS=3
+QEMU_GDB_TARGET_CLUSTER=3
+
+QEMU_ARGS=CFLAGS+=-DGDB_TARGET_CLUSTER=$(QEMU_GDB_TARGET_CLUSTER)
+$(BLD_QEMU)/aarch64-softmmu/qemu-system-aarch64: qemu
+
+$(BLD_QEMU)/config.status: | $(BLD_QEMU)/
+	cd $(BLD_QEMU) && $(BLD_QEMU_TO_ROOT)/$(QEMU)/configure \
+		--target-list=aarch64-softmmu --enable-fdt \
+		--disable-kvm --disable-xen --enable-debug
+qemu: $(BLD_QEMU)/config.status
+	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS)
+clean-qemu:
+	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS) clean
+.PHONY: qemu clean-qemu
+
+QDT_ARGS=
+$(QEMU_DT)/LATEST/SINGLE_ARCH/hpsc-arch.dtb: qemu-dt
+qemu-dt:
+	$(MAKE) -C $(QEMU_DT) $(QDT_ARGS)
+clean-qemu-dt:
+	$(MAKE) -C $(QEMU_DT) $(QDT_ARGS) clean
+.PHONY: qemu-dt clean-qemu-dt

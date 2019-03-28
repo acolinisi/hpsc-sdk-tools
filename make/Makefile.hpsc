@@ -1,6 +1,4 @@
 # Relative paths to reduce duplication throughout this file
-QEMU=qemu
-QEMU_DT=qemu-devicetrees
 HPSC_UTILS=hpsc-utils
 TOOLS=$(HPSC_UTILS)/host
 RECIPES=$(HPSC_UTILS)/make
@@ -24,11 +22,17 @@ BARE_METAL=hpsc-baremetal
 
 SDK=sdk
 
+# Revisit: this should point to the path of the *installed* SDK; target
+# software build should not refer to SDK source.  This implies that SDK needs
+# to install source of the Qemu device tree (which is reasonable); we could
+# also switch to binary overlays but to write the overlay, you need the source
+# of the original, so there's little point.
+QEMU_DT=$(SDK)/qemu-devicetrees
+
 # Directory for artifacts created by this top-level build
 BLD=bld
 BLD_PROF=$(BLD)/prof
 BLD_ZEBU=$(BLD)/zebu
-BLD_QEMU=$(BLD)/qemu
 
 UBOOT_TOOLS=$(HPPS_UBOOT)/tools
 
@@ -45,10 +49,6 @@ HPPS_KERN_LOAD_ADDR=0x8068_0000 # (base + TEXT_OFFSET), where base must be align
 HPPS_DRAM_ADDR=0x8000_0000
 HPPS_UBOOT_ENV_SIZE=0x1000 # must match CONFIG_ENV_SIZE in u-boot config
 
-# Build Qemu s.t. its GDB stub points to the given target CPU cluster:
-# TRCH=0, RTPS_R52=1, RTPS_A53=2, HPPS=3
-QEMU_GDB_TARGET_CLUSTER=3
-
 HPPS_ZEBU_DDR_IMAGE_INDEXES=0 1
 HPPS_ZEBU_DDR_IMAGES=$(BLD_ZEBU)/hpps/ddr0.bin $(BLD_ZEBU)/hpps/ddr1.bin
 
@@ -61,8 +61,8 @@ addr=$(subst _,,$1)
 # e.g. including regeneration of config, if you want any other clean or partial
 # build, then use the build system of the respective component directly.
 
-all: qemu qdt target
-clean: clean-qemu clean-qdt clean-target
+all: target
+clean: clean-target
 
 sdk:
 	$(MAKE) -C $(SDK)
@@ -123,27 +123,6 @@ $(BLD)/%/:
 # hinders rule legibility because dependencies can no longer be explicit
 # artifacts (they are phony targets) and the recipies can no longer refer to
 # dependencies (e.g. via $<).
-
-QEMU_ARGS=CFLAGS+=-DGDB_TARGET_CLUSTER=$(QEMU_GDB_TARGET_CLUSTER)
-$(BLD_QEMU)/aarch64-softmmu/qemu-system-aarch64: qemu
-
-$(BLD_QEMU)/config.status: | $(BLD_QEMU)/
-	cd $(BLD_QEMU) && ../../$(QEMU)/configure \
-		--target-list=aarch64-softmmu --enable-fdt \
-		--disable-kvm --disable-xen --enable-debug
-qemu: $(BLD_QEMU)/config.status
-	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS)
-clean-qemu:
-	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS) clean
-.PHONY: qemu clean-qemu
-
-QDT_ARGS=
-$(QEMU_DT)/LATEST/SINGLE_ARCH/hpsc-arch.dtb: qdt
-qdt:
-	$(MAKE) -C $(QEMU_DT) $(QDT_ARGS)
-clean-qdt:
-	$(MAKE) -C $(QEMU_DT) $(QDT_ARGS) clean
-.PHONY: qdt clean-qdt
 
 TRCH_BM_ARGS=
 $(BARE_METAL)/trch/bld/trch.elf: trch-bm
