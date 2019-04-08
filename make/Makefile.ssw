@@ -227,8 +227,9 @@ $(HPPS_LINUX_BOOT)/Image: $(HPPS_LINUX)/.config
 $(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dtb: $(HPPS_LINUX_BOOT)/Image.gz
 	$(MAKE) -C $(HPPS_LINUX) $(HPPS_LINUX_ARGS) hpsc/hpsc.dtb
 
-$(BLD)/hpps/uImage: $(HPPS_LINUX_BOOT)/Image.gz | $(BLD)/hpps/
-	mkimage -T kernel -C gzip -A arm64 -d "$<" -a $(call addr,${HPPS_KERN_LOAD_ADDR}) "$@"
+$(BLD)/hpps/uImage: $(HPPS_LINUX_BOOT)/Image.gz | $(BLD)/hpps/ $(UBOOT_TOOLS)/mkimage
+	$(UBOOT_TOOLS)/mkimage -T kernel -C gzip -A arm64 -d "$<" \
+		-a $(call addr,${HPPS_KERN_LOAD_ADDR}) "$@"
 
 # The make command in this recipe is only used for the invocation from the user
 # interface (via hpps-linux phony target shortcut), but not from the dependency
@@ -289,7 +290,7 @@ $(BLD)/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD)/hpps/
 	$(call make-initramfs,$(HPPS_BUSYBOX),$(HPPS_BUSYBOX_ARGS))
 
 # Could use the generic target, but then need names *.hpps-initramfs.*
-$(BLD)/hpps/initramfs.uimg : $(BLD)/hpps/initramfs.cpio.gz
+$(BLD)/hpps/initramfs.uimg : $(BLD)/hpps/initramfs.cpio.gz | $(UBOOT_TOOLS)/mkimage
 	$(call pack-hpps-initramfs)
 
 hpps-initramfs: $(BLD)/hpps/initramfs.uimg
@@ -470,7 +471,7 @@ define make-initramfs
 		cpio -R root:root -c -o -O "../$(@F)"
 endef
 define pack-initramfs
-	mkimage -T ramdisk -C gzip -A $(1) -n "Initramfs" -d "$<" "$@"
+	$(UBOOT_TOOLS)/mkimage -T ramdisk -C gzip -A $(1) -n "Initramfs" -d "$<" "$@"
 endef
 define clean-initramfs
 	rm -rf $(1){/,.uimg,.cpio,.cpio.gz,.fakeroot}
@@ -482,7 +483,7 @@ endef
 
 # Currently unused, but ideally, for consistency, would rename artifacts and
 # eliminated targets that casll the same recipe in favor of this target.
-%.hpps-initramfs.uimg: %.hpps-initramfs.cpio.gz
+%.hpps-initramfs.uimg: %.hpps-initramfs.cpio.gz | $(UBOOT_TOOLS)/mkimage
 	$(call pack-hpps-initramfs)
 
 # Prevent deletion of intermediate artifacts
