@@ -1,0 +1,15 @@
+#!/usr/bin/python2
+
+import sys
+import argparse
+import configparser
+
+parser = argparse.ArgumentParser(
+    description="Merge config files in INI format, output to stdout")
+parser.add_argument('input', nargs='+',
+    help='Input files to merge in INI format')
+args = parser.parse_args()
+
+cfg = configparser.ConfigParser()
+cfg.read(args.input)
+cfg.write(sys.stdout)
