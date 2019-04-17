@@ -135,12 +135,6 @@ create_kern_image() {
     run mkimage -C gzip -A arm64 -d "${HPPS_KERN_BIN}" -a ${HPPS_KERN_LOAD_ADDR} "${HPPS_KERN}"
 }
 
-create_syscfg_image()
-{
-    echo Compiling system config from INI to binary format...
-    run ${HPSC_HOST_UTILS_DIR}/cfgc -s "${SYSCFG_SCHEMA}" "${SYSCFG}" "${SYSCFG_BIN}"
-}
-
 syscfg_get()
 {
     python -c "import configparser as cp; c = cp.ConfigParser(); c.read('$SYSCFG'); print(c['$1']['$2'])"
@@ -160,7 +154,6 @@ create_if_absent()
 create_images()
 {
     set -e
-    create_syscfg_image
 
     if [ $CREATE_KERN_IMAGE -eq 1 ]
     then
@@ -359,7 +352,6 @@ else
 fi
 
 
-SYSCFG_BIN=syscfg.bin.${ID}
 TRCH_SRAM_FILE=trch_sram.bin.${ID}
 HPPS_NAND_IMAGE=rootfs_nand.bin.${ID}
 HPPS_SRAM_FILE=hpps_sram.bin.${ID}

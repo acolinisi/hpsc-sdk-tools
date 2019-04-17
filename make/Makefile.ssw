@@ -76,9 +76,9 @@ all: trch rtps hpps
 clean: trch-clean rtps-clean hpps-clean
 .PHONY: all clean
 
-trch: trch-bm
-trch-clean: trch-bm-clean
-.PHONY: trch trch-clean
+trch: trch-bm syscfg
+trch-clean: trch-bm-clean syscfg-clean
+.PHONY: trch trch-clean syscfg-clean
 
 rtps: rtps-r52 rtps-a53 rtps-bm
 rtps-clean: rtps-r52-clean rtps-a53-clean rtps-r52-bm-clean
@@ -125,6 +125,12 @@ $(BLD)/%/:
 # hinders rule legibility because dependencies can no longer be explicit
 # artifacts (they are phony targets) and the recipies can no longer refer to
 # dependencies (e.g. via $<).
+
+syscfg: $(BLD)/trch/syscfg.bin
+$(BLD)/trch/syscfg.bin: $(CONF_BASE)/trch/syscfg.ini | $(BLD)/trch/
+	$(call make-syscfg)
+clean-syscfg:
+	rm -f $(BLD)/trch/syscfg.bin
 
 TRCH_BM_ARGS=
 $(BARE_METAL)/trch/bld/trch.elf: trch-bm
@@ -360,6 +366,12 @@ $(BLD_PROF)/%.dts: | $(BLD_PROF)/
 	mkdir -p $(@D)
 	cat $^ > $@
 
+$(BLD_PROF)/%/trch/prof.syscfg.ini: \
+	$(CONF_BASE)/trch/syscfg.ini \
+	$(CONF_PROF)/%/trch/syscfg.ini \
+	| $(BLD_PROF)/%/trch/
+	$(TOOLS)/merge-ini $^ > $@
+
 $(BLD_PROF)/%/hpps/prof.hpps-uboot.env: \
 	$(CONF_BASE)/hpps/u-boot/uboot.env \
 	$(CONF_PROF)/%/hpps/u-boot/uboot.env \
@@ -452,8 +464,15 @@ endef
 %.hpps-uboot.env.bin: %.hpps-uboot.env | $(UBOOT_TOOLS)/mkenvimage
 	$(call make-uboot-env,$(HPPS_UBOOT_ENV_SIZE))
 
+%.syscfg.bin: %.syscfg.ini
+	$(call make-syscfg)
+
 define make-uboot-env
 	$(UBOOT_TOOLS)/mkenvimage -s $(1) -o $@ $<
+endef
+
+define make-syscfg
+	$(TOOLS)/cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
 endef
 
 IRF_FR=initramfs.fakeroot
