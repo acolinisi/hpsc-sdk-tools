@@ -73,33 +73,33 @@ addr=$(subst _,,$1)
 # build, then use the build system of the respective component directly.
 
 all: trch rtps hpps
-clean: clean-trch clean-rtps clean-hpps
+clean: trch-clean rtps-clean hpps-clean
 .PHONY: all clean
 
 trch: trch-bm
-clean-trch: clean-trch-bm
-.PHONY: trch clean-trch
+trch-clean: trch-bm-clean
+.PHONY: trch trch-clean
 
 rtps: rtps-r52 rtps-a53 rtps-bm
-clean-rtps: clean-rtps-r52 clean-rtps-a53 clean-rtps-r52-bm
-.PHONY: rtps clean-rtps
+rtps-clean: rtps-r52-clean rtps-a53-clean rtps-r52-bm-clean
+.PHONY: rtps rtps-clean
 
 hpps: hpps-atf hpps-uboot hpps-linux hpps-initramfs
-clean-hpps: clean-hpps-atf clean-hpps-uboot clean-hpps-linux \
-	clean-hpps-busybox clean-hpps-initramfs
-.PHONY: hpps clean-hpps
+hpps-clean: hpps-atf-clean hpps-uboot-clean hpps-linux-clean \
+	hpps-busybox-clean hpps-initramfs-clean
+.PHONY: hpps hpps-clean
 
 rtps-r52: rtps-r52-uboot rtps-r52-bm
-clean-rtps-r52: clean-rtps-r52-uboot clean-rtps-r52-bm
-.PHONY: rtps-r52 clean-rtps-r52
+rtps-r52-clean: rtps-r52-uboot-clean rtps-r52-bm-clean
+.PHONY: rtps-r52 rtps-r52-clean
 
 rtps-a53: rtps-a53-atf rtps-a53-uboot
-clean-rtps-a53: clean-rtps-atf clean-rtps-a53-uboot
-.PHONY: rtps-a53 clean-rtps-a53
+rtps-a53-clean: rtps-atf-clean rtps-a53-uboot-clean
+.PHONY: rtps-a53 rtps-a53-clean
 
 bm: trch-bm rtps-r52-bm
-clean-bm: clean-trch-bm clean-rtps-r52-bm
-.PHONY: bm clean-bm
+bm-clean: trch-bm-clean rtps-r52-bm-clean
+.PHONY: bm bm-clean
 
 $(BLD)/%/:
 	mkdir -p "$@"
@@ -130,17 +130,17 @@ TRCH_BM_ARGS=
 $(BARE_METAL)/trch/bld/trch.elf: trch-bm
 trch-bm:
 	$(MAKE) -C $(BARE_METAL)/trch$(TRCH_BM_ARGS) CROSS_COMPILE=$(CROSS_M4)
-clean-trch-bm:
+trch-bm-clean:
 	$(MAKE) -C $(BARE_METAL)/trch$(TRCH_BM_ARGS) clean
-.PHONY: trch-bm clean-trch-bm
+.PHONY: trch-bm trch-bm-clean
 
 RTPS_R52_BM_ARGS=
 $(BARE_METAL)/rtps/bld/rtps.uimg: rtps-bm
 rtps-r52-bm:
 	$(MAKE) -C $(BARE_METAL)/rtps $(RTPS_R52_BM_ARGS) CROSS_COMPILE=$(CROSS_R52)
-clean-rtps-r52-bm:
+rtps-r52-bm-clean:
 	$(MAKE) -C $(BARE_METAL)/rtps $(RTPS_R52_BM_ARGS) clean
-.PHONY: rtps-r52-bm clean-rtps-r52-bm
+.PHONY: rtps-r52-bm rtps-r52-bm-clean
 
 RTPS_R52_UBOOT_ARGS=CROSS_COMPILE=$(CROSS_R52)
 $(RTPS_R52_UBOOT)/.config: $(RTPS_R52_UBOOT)/configs/hpsc_rtps_r52_defconfig
@@ -148,10 +148,10 @@ $(RTPS_R52_UBOOT)/.config: $(RTPS_R52_UBOOT)/configs/hpsc_rtps_r52_defconfig
 $(RTPS_R52_UBOOT)/u-boot.bin: rtps-r52-uboot
 rtps-r52-uboot: $(RTPS_R52_UBOOT)/.config
 	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) u-boot.bin
-clean-rtps-r52-uboot:
+rtps-r52-uboot-clean:
 	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) clean
 	rm -f $(RTPS_R52_UBOOT)/.config
-.PHONY: rtps-r52-uboot clean-rtps-r52-uboot
+.PHONY: rtps-r52-uboot rtps-r52-uboot-clean
 
 RTPS_A53_UBOOT_ARGS=CROSS_COMPILE=$(CROSS_A53)
 $(RTPS_A53_UBOOT)/.config: $(RTPS_A53_UBOOT)/configs/hpsc_rtps_a53_defconfig
@@ -159,26 +159,26 @@ $(RTPS_A53_UBOOT)/.config: $(RTPS_A53_UBOOT)/configs/hpsc_rtps_a53_defconfig
 $(RTPS_A53_UBOOT)/u-boot.bin: rtps-a53-uboot
 rtps-a53-uboot: $(RTPS_A53_UBOOT)/u-boot.bin
 	$(MAKE) -C $(RTPS_A53_UBOOT) $(RTPS_A53_UBOOT_ARGS) u-boot.bin
-clean-rtps-a53-uboot:
+rtps-a53-uboot-clean:
 	$(MAKE) -C $(RTPS_A53_UBOOT) $(RTPS_A53_UBOOT_ARGS) clean
 	rm -f $(RTPS_A53_UBOOT)/.config
-.PHONY: rtps-a53-uboot clean-rtps-a53-uboot
+.PHONY: rtps-a53-uboot rtps-a53-uboot-clean
 
 RTPS_A53_ATF_ARGS=PLAT=hpsc_rtps_a53 DEBUG=1 CROSS_COMPILE=$(CROSS_A53)
 $(RTPS_A53_ATF)/build/hpsc_rtps_a53/debug/bl31.bin: rtps-a53-atf
 rtps-a53-atf:
 	$(MAKE) -C $(RTPS_A53_ATF) $(RTPS_A53_ATF_ARGS) bl31
-clean-rtps-a53-atf:
+rtps-a53-atf-clean:
 	$(MAKE) -C $(RTPS_A53_ATF) $(RTPS_A53_ATF_ARGS) clean
-.PHONY: rtps-a53-atf clean-rtps-a53-atf
+.PHONY: rtps-a53-atf rtps-a53-atf-clean
 
 HPPS_ATF_ARGS=PLAT=hpsc DEBUG=1 CROSS_COMPILE=$(CROSS_A53)
 $(HPPS_ATF)/build/hpsc/debug/bl31.bin: hpps-atf
 hpps-atf:
 	$(MAKE) -C $(HPPS_ATF) $(HPPS_ATF_ARGS) bl31
-clean-hpps-atf:
+hpps-atf-clean:
 	$(MAKE) -C $(HPPS_ATF) $(HPPS_ATF_ARGS) clean
-.PHONY: hpps-atf clean-hpps-atf
+.PHONY: hpps-atf hpps-atf-clean
 
 HPPS_UBOOT_ARGS=CROSS_COMPILE=$(CROSS_A53)
 $(HPPS_UBOOT)/.config: $(HPPS_UBOOT)/configs/hpsc_hpps_defconfig
@@ -189,7 +189,7 @@ $(HPPS_UBOOT)/u-boot.dtb: $(HPPS_UBOOT)/u-boot.bin
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS) u-boot.dtb
 $(HPPS_UBOOT)/tools/mkenvimage:
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS) tools
-clean-hpps-uboot: clean-hpps-uboot-env
+hpps-uboot-clean: hpps-uboot-env-clean
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS) clean
 	rm -f $(HPPS_UBOOT)/.config
 $(BLD)/hpps/uboot.env.bin: $(CONF_BASE)/hpps/u-boot/uboot.env \
@@ -209,9 +209,9 @@ hpps-uboot: $(HPPS_UBOOT)/.config
 	$(MAKE) $(BLD)/hpps/uboot.env.bin
 
 hpps-uboot-env: $(BLD)/hpps/uboot.env.bin
-clean-hpps-uboot-env:
+hpps-uboot-env-clean:
 	rm -f $(BLD)/hpps/uboot.env.bin
-.PHONY: hpps-uboot clean-hpps-uboot hpps-uboot-env clean-hpps-uboot-env
+.PHONY: hpps-uboot hpps-uboot-clean hpps-uboot-env hpps-uboot-env-clean
 
 HPPS_LINUX_ARGS=ARCH=arm64 CROSS_COMPILE=$(CROSS_A53)
 $(HPPS_LINUX)/.config: $(HPPS_LINUX)/arch/arm64/configs/hpsc_defconfig
@@ -265,10 +265,10 @@ $(BLD)/hpps/uImage: $(HPPS_LINUX_BOOT)/Image.gz | $(BLD)/hpps/ $(UBOOT_TOOLS)/mk
 hpps-linux: $(HPPS_LINUX)/.config
 	$(MAKE) -C $(HPPS_LINUX) $(HPPS_LINUX_ARGS)
 	$(MAKE) $(BLD)/hpps/uImage
-clean-hpps-linux:
+hpps-linux-clean:
 	$(MAKE) -C $(HPPS_LINUX) $(HPPS_LINUX_ARGS) mrproper
 	rm -f $(BLD)/hpps/uImage
-.PHONY: hpps-linux clean-hpps-linux
+.PHONY: hpps-linux hpps-linux-clean
 
 
 HPPS_BUSYBOX_ARGS=CROSS_COMPILE=$(CROSS_A53_LINUX)
@@ -279,10 +279,10 @@ $(HPPS_BUSYBOX)/busybox: $(HPPS_BUSYBOX)/.config
 	$(MAKE) -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS) busybox
 hpps-busybox:
 	$(MAKE) -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS)
-clean-hpps-busybox:
+hpps-busybox-clean:
 	$(MAKE) -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS) clean
 	rm -f $(HPPS_BUSYBOX)/.config
-.PHONY: hpps-busybox clean-hpps-busybox
+.PHONY: hpps-busybox hpps-busybox-clean
 
 $(BLD)/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD)/hpps/
 	$(call copy-initramfs,$(CONF_BASE)/hpps/initramfs)
@@ -294,9 +294,9 @@ $(BLD)/hpps/initramfs.uimg : $(BLD)/hpps/initramfs.cpio.gz | $(UBOOT_TOOLS)/mkim
 	$(call pack-hpps-initramfs)
 
 hpps-initramfs: $(BLD)/hpps/initramfs.uimg
-clean-hpps-initramfs:
-	$(call clean-initramfs,$(BLD)/hpps/initramfs)
-.PHONY: hpps-initramfs clean-hpps-initramfs
+hpps-initramfs-clean:
+	$(call initramfs-clean,$(BLD)/hpps/initramfs)
+.PHONY: hpps-initramfs hpps-initramfs-clean
 
 # The following targets define profiles
 
@@ -338,12 +338,12 @@ PROFILES_WITH_ZEBU+=hpps-booti
 
 .PHONY: prof-%
 
-clean-prof-%:
+prof-%-clean:
 	rm -rf $(BLD_PROF)/$*/
-.PHONY: clean-prof-%
-clean-hpps-initramfs-prof-%:
-	$(call clean-initramfs,$(BLD_PROF)/$*/hpps/initramfs)
-.PHONY: clean-hpps-initramfs-prof-%
+.PHONY: prof-%-clean
+prof-%-hpps-initramfs-clean:
+	$(call initramfs-clean,$(BLD_PROF)/$*/hpps/initramfs)
+.PHONY: prof-%-hpps-initramfs-clean
 
 # Note the empty recipe. Not sure why it does not work without it.
 prof-%-zebu-hpps: prof-% $(BLD_PROF)/%/zebu/prof.hpps.zebu.mem.bin
@@ -351,10 +351,10 @@ prof-%-zebu-hpps: prof-% $(BLD_PROF)/%/zebu/prof.hpps.zebu.mem.bin
 # prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.zebu.x.ddr.bin
 	
 .PHONY: prof-%-zebu-hpps
-clean-prof-%-zebu-hpps:
+prof-%-zebu-hpps-clean:
 	rm -rf $(BLD_PROF)/$*/zebu/prof.hpps.zebu.{mem.bin,*.ddr.bin,mem.rule} \
 		$(BLD_PROF)/$*/zebu/hpps.{mem.map,mem.dep,zebu}
-.PHONY: prof-%-zebu-hpps clean-prof-%-zebu-hpps
+.PHONY: prof-%-zebu-hpps prof-%-zebu-hpps-clean
 
 $(BLD_PROF)/%.dts: | $(BLD_PROF)/
 	mkdir -p $(@D)
@@ -385,7 +385,7 @@ $(BLD_PROF)/%/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
 $(BLD_PROF)/%/hpps/initramfs.uimg: $(BLD_PROF)/%/hpps/initramfs.cpio.gz
 	$(call pack-hpps-initramfs)
 
-ifeq ($(filter clean-%,$(MAKECMDGOALS)),)
+ifeq ($(filter %-clean,$(MAKECMDGOALS)),)
 ifneq ($(findstring zebu,$(MAKECMDGOALS)),)
 $(info INCLUDE $(foreach prof,$(PROFILES_WITH_ZEBU),\
 		$(BLD_PROF)/$(prof)/zebu/prof.hpps.zebu.mem.rule))
@@ -473,7 +473,7 @@ endef
 define pack-initramfs
 	$(UBOOT_TOOLS)/mkimage -T ramdisk -C gzip -A $(1) -n "Initramfs" -d "$<" "$@"
 endef
-define clean-initramfs
+define initramfs-clean
 	rm -rf $(1){/,.uimg,.cpio,.cpio.gz,.fakeroot}
 endef
 

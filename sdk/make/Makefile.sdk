@@ -14,7 +14,7 @@ WGET=wget
 TAR=tar
 
 all: toolchains env qemu qemu-dt
-clean: clean-toolchains clean-env clean-qemu clean-qemu-dt
+clean: toolchains-clean env-env qemu-clean qemu-dt-clean
 
 # Prerequisites added to this rule dynamically
 fetch:
@@ -32,9 +32,9 @@ env: $(ENV_FILE)
 $(ENV_FILE): export ENV_SH=$(ENV)
 $(ENV_FILE):
 	echo "$$ENV_SH" > $@
-clean-env:
+env-clean:
 	rm -f $(ENV_FILE)
-.PHONY: env clean-env
+.PHONY: env env-clean
 
 # Not part of default build
 sysroot:
@@ -50,9 +50,9 @@ DEPS_TC=\
 DEPS=$(DEPS_TC)
 
 toolchains: $(DEPS_TC)
-clean-toolchains:
+toolchains-clean:
 	rm -rf $(TC)/
-.PHONY: clean-toolchains
+.PHONY: toolchains-clean
 
 # Other toolchain distributables may work as well, with the known exceptions:
 # * GCC v8 breaks build of kernel 4.14 (build completes but kernel does not run)
@@ -119,14 +119,14 @@ $(BLD_QEMU)/config.status: | $(BLD_QEMU)/
 		--disable-kvm --disable-xen --enable-debug
 qemu: $(BLD_QEMU)/config.status
 	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS)
-clean-qemu:
+qemu-clean:
 	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS) clean
-.PHONY: qemu clean-qemu
+.PHONY: qemu qemu-clean
 
 QDT_ARGS=
 $(QEMU_DT)/LATEST/SINGLE_ARCH/hpsc-arch.dtb: qemu-dt
 qemu-dt:
 	$(MAKE) -C $(QEMU_DT) $(QDT_ARGS)
-clean-qemu-dt:
+qemu-dt-clean:
 	$(MAKE) -C $(QEMU_DT) $(QDT_ARGS) clean
-.PHONY: qemu-dt clean-qemu-dt
+.PHONY: qemu-dt qemu-dt-clean
