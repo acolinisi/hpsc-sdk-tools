@@ -126,12 +126,6 @@ $(BLD)/%/:
 # artifacts (they are phony targets) and the recipies can no longer refer to
 # dependencies (e.g. via $<).
 
-syscfg: $(BLD)/trch/syscfg.bin
-$(BLD)/trch/syscfg.bin: $(CONF_BASE)/trch/syscfg.ini | $(BLD)/trch/
-	$(call make-syscfg)
-clean-syscfg:
-	rm -f $(BLD)/trch/syscfg.bin
-
 TRCH_BM_ARGS=
 $(BARE_METAL)/trch/bld/trch.elf: trch-bm
 trch-bm:
@@ -306,10 +300,18 @@ hpps-initramfs-clean:
 
 # The following targets define profiles
 
+# Artifacts generated for all profiles
+PROF_COMMON=\
+	trch/prof.syscfg.bin
+
+define prof-common
+$(patsubst %,$(BLD_PROF)/$(1)/%,$(PROF_COMMON))
+endef
+
 # default profile
 
-prof-default: $(BLD_PROF)/default/hpps/initramfs.uimg
-.PHONY: prof-default
+prof-default: $(call prof-common,default) \
+	$(BLD_PROF)/default/hpps/initramfs.uimg
 
 PROFILES_WITH_ZEBU+=default
 
@@ -327,7 +329,7 @@ $(BLD_PROF)/ftrace-extractor/hpps/prof.hpps-linux.dts: \
 	$(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dts \
 	$(CONF_BASE)/hpps/linux/dt/gp-mem.dts
 
-prof-ftrace-extractor: \
+prof-ftrace-extractor: $(call prof-common,ftrace-extractor) \
 	$(BLD_PROF)/ftrace-extractor/qemu/prof.qemu.dtb \
 	$(BLD_PROF)/ftrace-extractor/hpps/initramfs.uimg \
 	$(BLD_PROF)/ftrace-extractor/hpps/prof.hpps-linux.dtb \
@@ -335,7 +337,7 @@ prof-ftrace-extractor: \
 
 # hpps booti profile
 
-prof-hpps-booti: \
+prof-hpps-booti: $(call prof-common,hpps-booti) \
 	$(BLD_PROF)/hpps-booti/hpps/prof.hpps-uboot.env.bin
 
 PROFILES_WITH_ZEBU+=hpps-booti
@@ -365,6 +367,10 @@ prof-%-zebu-hpps-clean:
 $(BLD_PROF)/%.dts: | $(BLD_PROF)/
 	mkdir -p $(@D)
 	cat $^ > $@
+
+# empty recipe to ignore optional profile overrides that do not exist
+$(CONF_PROF)/%/trch/syscfg.ini:
+	
 
 $(BLD_PROF)/%/trch/prof.syscfg.ini: \
 	$(CONF_BASE)/trch/syscfg.ini \
@@ -465,14 +471,10 @@ endef
 	$(call make-uboot-env,$(HPPS_UBOOT_ENV_SIZE))
 
 %.syscfg.bin: %.syscfg.ini
-	$(call make-syscfg)
+	$(TOOLS)/cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
 
 define make-uboot-env
 	$(UBOOT_TOOLS)/mkenvimage -s $(1) -o $@ $<
-endef
-
-define make-syscfg
-	$(TOOLS)/cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
 endef
 
 IRF_FR=initramfs.fakeroot

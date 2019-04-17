@@ -280,7 +280,7 @@ setup_console()
 RESET=1
 NET=user
 MONITOR=1
-PROFILE=
+PROFILE=default
 
 # parse options
 while getopts "h?S?q?p:n:i:" o; do
@@ -317,16 +317,13 @@ then
     CMD="run"
 fi
 
-if [[ ! -z "${PROFILE}" ]]
+PROF_DIR=${CONF_DIR}/prof/${PROFILE}
+if [ ! -d "${PROF_DIR}" ]
 then
-    PROF_DIR=${CONF_DIR}/prof/${PROFILE}
-    if [ ! -d "${PROF_DIR}" ]
-    then
-        echo "ERROR: proflie ${PROFILE} not found at: ${PROF_DIR}" 1>&2
-        exit 1
-    fi
-    ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}")
+    echo "ERROR: proflie ${PROFILE} not found at: ${PROF_DIR}" 1>&2
+    exit 1
 fi
+ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}")
 
 ENV_FILES+=("${PWD}/${QEMU_ENV}")
 
