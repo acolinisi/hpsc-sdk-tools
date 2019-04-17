@@ -144,12 +144,12 @@ clean-rtps-r52-bm:
 
 RTPS_R52_UBOOT_ARGS=CROSS_COMPILE=$(CROSS_R52)
 $(RTPS_R52_UBOOT)/.config: $(RTPS_R52_UBOOT)/configs/hpsc_rtps_r52_defconfig
-	$(MAKE) -C $(RTPS_R52_UBOOT)$(RTPS_R52_UBOOT_ARGS) hpsc_rtps_r52_defconfig
+	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) hpsc_rtps_r52_defconfig
 $(RTPS_R52_UBOOT)/u-boot.bin: rtps-r52-uboot
 rtps-r52-uboot: $(RTPS_R52_UBOOT)/.config
-	$(MAKE) -C $(RTPS_R52_UBOOT)$(RTPS_R52_UBOOT_ARGS) u-boot.bin
+	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) u-boot.bin
 clean-rtps-r52-uboot:
-	$(MAKE) -C $(RTPS_R52_UBOOT)$(RTPS_R52_UBOOT_ARGS) clean
+	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) clean
 	rm -f $(RTPS_R52_UBOOT)/.config
 .PHONY: rtps-r52-uboot clean-rtps-r52-uboot
 
