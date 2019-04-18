@@ -141,6 +141,7 @@ do
     fi
 
     IN_FILE=$TOK2
+    IN_FILE=$(eval echo ${IN_FILE}) # expand vars
     SEGMENT_FILES["$KEY"]="$IN_FILE"
 
     if [ $LIST_ONLY -eq 1 ]
