@@ -33,7 +33,7 @@ QEMU_DT=$(SDK)/qemu-devicetrees
 # could be a parent repo for target software, which would also have submodule
 # references)
 HPSC_UTILS=../hpsc-utils
-TOOLS=$(HPSC_UTILS)/host
+TOOLS=$(HPSC_UTILS)/sdk/host
 CONF=$(HPSC_UTILS)/conf
 
 CONF_ZEBU=$(CONF)/zebu/hpps

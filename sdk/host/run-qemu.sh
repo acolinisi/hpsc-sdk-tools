@@ -79,7 +79,7 @@ CPU_HPPS=4
 # locations (vars in later files override vars in earlier files):
 QEMU_ENV=qemu-env.sh
 SCRIPT_DIR="$(dirname "$0")"
-CONF_DIR="${SCRIPT_DIR}/../conf"
+CONF_DIR="${SCRIPT_DIR}/../../conf"
 CONF_QEMU_ENV=qemu/$QEMU_ENV
 
 # More added later in this script
@@ -210,7 +210,7 @@ function setup_screen()
 
 function serial_ptys()
 {
-    ${HPSC_HOST_UTILS_DIR}/qmp.py -q localhost $QMP_PORT query-chardev | \
+    ${TOOLS}/qmp.py -q localhost $QMP_PORT query-chardev | \
         qemu-chardev-ptys ${SERIAL_PORTS[*]}
 }
 
@@ -261,7 +261,7 @@ function attach_consoles()
     if [ "$RESET" -eq 1 ]
     then
         echo "Sending 'continue' command to Qemu to reset the machine..."
-        ${HPSC_HOST_UTILS_DIR}/qmp.py localhost $QMP_PORT cont
+        ${TOOLS}/qmp.py localhost $QMP_PORT cont
     else
         echo "Waiting for 'continue' (aka. reset) command via GDB or QMP connection..."
     fi
