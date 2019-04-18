@@ -3,6 +3,7 @@
 import sys
 import argparse
 import re
+import os
 from collections import OrderedDict
 
 parser = argparse.ArgumentParser(
@@ -13,6 +14,10 @@ args = parser.parse_args()
 
 d = OrderedDict()
 for f in args.input:
+    # ignore non-existant inputs, useful for overriding by merging
+    if not os.path.exists(f):
+        continue
+
     fin = open(f, "r")
     line_num = 0
     for line in fin:
