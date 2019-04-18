@@ -283,14 +283,28 @@ hpps-initramfs-clean:
 
 # Targets that implement profiles (generic across profile)
 
+PROFILES=$(notdir $(wildcard $(CONF_PROF)/*))
+
 # Artifacts generated for all profiles
 PROF_COMMON=\
 	trch/prof.syscfg.bin \
 	hpps/prof.hpps-uboot.env.bin \
+	qemu/prof.qemu.dtb \
 
 define prof-common
 $(patsubst %,$(BLD_PROF)/$(1)/%,$(PROF_COMMON))
 endef
+
+# We cannot append deps to pattern rules, so have to use explicit rules.
+define merge-base-rules
+$(BLD_PROF)/$(1)/qemu/prof.qemu.dts: $(QEMU_DT)/hpsc-arch.dts | $(BLD_PROF)/$(1)/qemu/
+$(BLD_PROF)/$(1)/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini | $(BLD_PROF)/$(1)/trch/
+$(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env | $(BLD_PROF)/$(1)/hpps/
+$(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.dts: $(HPPS_UBOOT)/arch/arm/dts/hpsc-hpps.dts | $(BLD_PROF)/$(1)/hpps/
+$(BLD_PROF)/$(1)/hpps/prof.hpps-linux.dts: $(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dts | $(BLD_PROF)/$(1)/hpps/
+$(BLD_PROF)/$(1)/zebu/prof.hpps.mem.map: $(CONF_BASE)/zebu/hpps-mem.map | $(BLD_PROF)/$(1)/zebu/
+endef
+$(foreach prof,$(PROFILES),$(eval $(call merge-base-rules,$(prof))))
 
 include $(CONF_PROF)/*/Makefile.prof # definitions of profiles
 
@@ -316,18 +330,17 @@ prof-%-zebu-hpps-clean:
 
 # Merging rules. Each profile defines the inputs to merge as dependencies.
 
-$(BLD_PROF)/%.dts: | $(BLD_PROF)/
-	mkdir -p $(@D)
-	cat $^ > $@
+$(BLD_PROF)/%.dts:
+	cat $(INPUTS) $^ > $@
 
-$(BLD_PROF)/%/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini | $(BLD_PROF)/%/trch/
-	$(TOOLS)/merge-ini $^ > $@
+$(BLD_PROF)/%.ini:
+	$(TOOLS)/merge-ini $(INPUTS) $^ > $@
 
-$(BLD_PROF)/%/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env | $(BLD_PROF)/%/hpps/
-	$(TOOLS)/merge-env $^ > $@
+$(BLD_PROF)/%.env:
+	$(TOOLS)/merge-env $(INPUTS) $^ > $@
 
-$(BLD_PROF)/%/zebu/prof.hpps.mem.map: $(CONF_BASE)/zebu/hpps-mem.map | $(BLD_PROF)/%/zebu/
-	$(TOOLS)/merge-map $^ > $@
+$(BLD_PROF)/%.mem.map:
+	$(TOOLS)/merge-map $(INTPUTS) $^ > $@
 
 $(BLD_PROF)/%/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
 	$(call copy-initramfs,$(CONF_BASE)/hpps/initramfs)
