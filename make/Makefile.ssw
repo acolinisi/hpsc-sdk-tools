@@ -267,29 +267,16 @@ hpps-busybox-clean:
 	rm -f $(HPPS_BUSYBOX)/.config
 .PHONY: hpps-busybox hpps-busybox-clean
 
-$(BLD)/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD)/hpps/
-	$(call copy-initramfs,$(CONF_BASE)/hpps/initramfs)
-	$(call init-initramfs,$(CONF_BASE)/hpps/initramfs.sh)
-	$(call make-initramfs,$(HPPS_BUSYBOX),$(HPPS_BUSYBOX_ARGS))
-
-# Could use the generic target, but then need names *.hpps-initramfs.*
-$(BLD)/hpps/initramfs.uimg : $(BLD)/hpps/initramfs.cpio.gz | $(UBOOT_TOOLS)/mkimage
-	$(call pack-hpps-initramfs)
-
-hpps-initramfs: $(BLD)/hpps/initramfs.uimg
-hpps-initramfs-clean:
-	$(call initramfs-clean,$(BLD)/hpps/initramfs)
-.PHONY: hpps-initramfs hpps-initramfs-clean
-
 # Targets that implement profiles (generic across profile)
 
 PROFILES=$(notdir $(wildcard $(CONF_PROF)/*))
 
 # Artifacts generated for all profiles
 PROF_COMMON=\
+	qemu/prof.qemu.dtb \
 	trch/prof.syscfg.bin \
 	hpps/prof.hpps-uboot.env.bin \
-	qemu/prof.qemu.dtb \
+	hpps/initramfs.uimg \
 
 define prof-common
 $(patsubst %,$(BLD_PROF)/$(1)/%,$(PROF_COMMON))
@@ -313,20 +300,6 @@ include $(CONF_PROF)/*/Makefile.prof # definitions of profiles
 prof-%-clean:
 	rm -rf $(BLD_PROF)/$*/
 .PHONY: prof-%-clean
-prof-%-hpps-initramfs-clean:
-	$(call initramfs-clean,$(BLD_PROF)/$*/hpps/initramfs)
-.PHONY: prof-%-hpps-initramfs-clean
-
-# Note the empty recipe. Not sure why it does not work without it.
-prof-%-zebu-hpps: prof-% $(BLD_PROF)/%/zebu/prof.hpps.zebu.mem.bin
-# Enable the following to also generate striped images (.bin or .vhex)
-# prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.zebu.x.ddr.bin
-	
-.PHONY: prof-%-zebu-hpps
-prof-%-zebu-hpps-clean:
-	rm -rf $(BLD_PROF)/$*/zebu/prof.hpps.zebu.{mem.bin,*.ddr.bin,mem.rule} \
-		$(BLD_PROF)/$*/zebu/hpps.{mem.map,mem.dep,zebu}
-.PHONY: prof-%-zebu-hpps prof-%-zebu-hpps-clean
 
 # Merging rules. Each profile defines the inputs to merge as dependencies.
 
@@ -342,18 +315,43 @@ $(BLD_PROF)/%.env:
 $(BLD_PROF)/%.mem.map:
 	$(TOOLS)/merge-map $(INTPUTS) $^ > $@
 
+IRF_FR=initramfs.fakeroot
 $(BLD_PROF)/%/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
-	$(call copy-initramfs,$(CONF_BASE)/hpps/initramfs)
+	rsync -aq $(CONF_BASE)/hpps/initramfs/ $(@D)/initramfs
 	[ ! -d "$(CONF_PROF)/$*/hpps/initramfs/" ] || \
-		$(call copy-initramfs,$(CONF_PROF)/$*/hpps/initramfs)
-	$(call init-initramfs,$(CONF_BASE)/hpps/initramfs.sh)
+		rsync -aq $(CONF_PROF)/$*/hpps/initramfs/ $(@D)/initramfs
+	( cd $(@D)/initramfs && fakeroot -s ../$(IRF_FR) $(abspath $(CONF_BASE)/hpps/initramfs.sh) )
 	[ ! -f "$(CONF_PROF)/$*/hpps/initramfs.sh" ] || \
-		$(call init-initramfs,$(CONF_PROF)/$*/hpps/initramfs.sh)
-	$(call make-initramfs,$(HPPS_BUSYBOX),$(HPPS_BUSYBOX_ARGS))
+		( cd $(@D)/initramfs && fakeroot -s ../$(IRF_FR) $(abspath $(CONF_PROF)/$*/hpps/initramfs.sh) )
+	fakeroot -i $(@D)/$(IRF_FR) -s $(@D)/$(IRF_FR) \
+		$(MAKE) -j1 -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS) \
+			CONFIG_PREFIX="$(abspath $(@D)/initramfs)" install
+	cd $(@D)/initramfs && find . | fakeroot -i ../$(IRF_FR) -s $(IRF_FR) \
+		cpio -R root:root -c -o -O "../$(@F)"
 
 # Could use the generic target, but then need names *.hpps-initramfs.*
 $(BLD_PROF)/%/hpps/initramfs.uimg: $(BLD_PROF)/%/hpps/initramfs.cpio.gz
-	$(call pack-hpps-initramfs)
+	$(UBOOT_TOOLS)/mkimage -T ramdisk -C gzip -A arm64 -n "Initramfs" -d "$<" "$@"
+
+# Note the empty recipe, because it's an alias that is a pattern rule
+prof-%-hpps-initramfs: $(BLD_PROF)/%/hpps/initramfs.uimg
+	
+prof-%-hpps-initramfs-clean:
+	rm -rf $(BLD_PROF)/$*/hpps/initramfs{/,.uimg,.cpio,.cpio.gz,.fakeroot}
+.PHONY: prof-%-hpps-initramfs prof-%-hpps-initramfs-clean
+
+# Zebu targets
+
+# Note the empty recipe. Not sure why it does not work without it.
+prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.zebu.mem.bin
+# Enable the following to also generate striped images (.bin or .vhex)
+# prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.zebu.x.ddr.bin
+	
+.PHONY: prof-%-zebu-hpps
+prof-%-zebu-hpps-clean:
+	rm -rf $(BLD_PROF)/$*/zebu/prof.hpps.zebu.{mem.bin,*.ddr.bin,mem.rule} \
+		$(BLD_PROF)/$*/zebu/hpps.{mem.map,mem.dep,zebu}
+.PHONY: prof-%-zebu-hpps prof-%-zebu-hpps-clean
 
 ifeq ($(filter %-clean,$(MAKECMDGOALS)),)
 ifneq ($(findstring zebu,$(MAKECMDGOALS)),)
@@ -428,36 +426,6 @@ endef
 
 %.syscfg.bin: %.syscfg.ini
 	$(TOOLS)/cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
-
-IRF_FR=initramfs.fakeroot
-define copy-initramfs
-	rsync -aq $(1)/ $(@D)/initramfs
-endef
-define init-initramfs
-	( cd $(@D)/initramfs && fakeroot -s ../$(IRF_FR) $(abspath $(1)) )
-endef
-define make-initramfs
-	fakeroot -i $(@D)/$(IRF_FR) -s $(@D)/$(IRF_FR) \
-		$(MAKE) -j1 -C $(1) $(2) \
-			CONFIG_PREFIX="$(abspath $(@D)/initramfs)" install
-	cd $(@D)/initramfs && find . | fakeroot -i ../$(IRF_FR) -s $(IRF_FR) \
-		cpio -R root:root -c -o -O "../$(@F)"
-endef
-define pack-initramfs
-	$(UBOOT_TOOLS)/mkimage -T ramdisk -C gzip -A $(1) -n "Initramfs" -d "$<" "$@"
-endef
-define initramfs-clean
-	rm -rf $(1){/,.uimg,.cpio,.cpio.gz,.fakeroot}
-endef
-
-define pack-hpps-initramfs
-	$(call pack-initramfs,arm64)
-endef
-
-# Currently unused, but ideally, for consistency, would rename artifacts and
-# eliminated targets that casll the same recipe in favor of this target.
-%.hpps-initramfs.uimg: %.hpps-initramfs.cpio.gz | $(UBOOT_TOOLS)/mkimage
-	$(call pack-hpps-initramfs)
 
 # Prevent deletion of intermediate artifacts
 .SECONDARY:
