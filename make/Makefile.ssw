@@ -316,7 +316,10 @@ $(BLD_PROF)/%.mem.map:
 	$(TOOLS)/merge-map $(INTPUTS) $^ > $@
 
 IRF_FR=initramfs.fakeroot
-$(BLD_PROF)/%/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
+$(BLD_PROF)/%/hpps/initramfs.cpio: $(wildcard \
+	$(CONF_BASE)/hpps/initramfs/* $(CONF_BASE)/hpps/initramfs/*/*  \
+	$(CONF_PROF)/%/hpps/initrams/* $(CONF_PROF)/%/hpps/initrams/*/*) \
+	$(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
 	rsync -aq $(CONF_BASE)/hpps/initramfs/ $(@D)/initramfs
 	[ ! -d "$(CONF_PROF)/$*/hpps/initramfs/" ] || \
 		rsync -aq $(CONF_PROF)/$*/hpps/initramfs/ $(@D)/initramfs
