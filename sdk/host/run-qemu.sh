@@ -112,6 +112,7 @@ function create_lsio_smc_sram_port_image()
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_FW}"      "hpps-fw" ${HPPS_FW_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_DT}"      "hpps-dt" ${HPPS_DT_ADDR}
     run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_KERN}"    "hpps-os" ${HPPS_KERN_ADDR}
+    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_INITRAMFS}" "hpps-initramfs" ${HPPS_INITRAMFS_ADDR}
     run "${SRAM_IMAGE_UTILS}" show "${TRCH_SRAM_FILE}"
 }
 
@@ -501,15 +502,9 @@ then
         -device "loader,addr=${HPPS_BL_DT_ADDR},file=${HPPS_BL_DT},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_BL_ENV_ADDR},file=${HPPS_BL_ENV},force-raw,cpu-num=${CPU_HPPS}"
         -device "loader,addr=${HPPS_DT_ADDR},file=${HPPS_DT},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=${CPU_HPPS}")
-fi
-
-HPPS__ROOTFS_LOC=$(syscfg_get HPPS rootfs_loc)
-if [ $? -ne 0 ]; then echo "ERROR: syscfg_get failed" && exit 1; fi
-
-if [ "$HPPS__ROOTFS_LOC" = "HPPS_DRAM" ]
-then
-    COMMAND+=(-device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=${CPU_HPPS}")
+        -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=${CPU_HPPS}"
+        -device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=${CPU_HPPS}"
+	)
 fi
 
 if [[ ! -z "${HPPS_RAMOOPS}" && ! -z "${HPPS_RAMOOPS_ADDR}" ]]
