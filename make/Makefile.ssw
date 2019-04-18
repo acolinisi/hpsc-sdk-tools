@@ -323,6 +323,9 @@ prof-ftrace-extractor: $(call prof-common,ftrace-extractor) \
 
 prof-hpps-booti: $(call prof-common,hpps-booti)
 
+$(BLD_PROF)/hpps-booti/hpps/prof.hpps-uboot.env: $(CONF_PROF)/hpps-booti/hpps/u-boot/uboot.env
+$(BLD_PROF)/hpps-booti/zebu/prof.hpps.mem.map: $(CONF_PROF)/hpps-booti/zebu/hpps-mem.map
+
 PROFILES_WITH_ZEBU+=hpps-booti
 
 # Targets that implement profiles (generic as a function of profile)
@@ -347,31 +350,19 @@ prof-%-zebu-hpps-clean:
 		$(BLD_PROF)/$*/zebu/hpps.{mem.map,mem.dep,zebu}
 .PHONY: prof-%-zebu-hpps prof-%-zebu-hpps-clean
 
+# Merging rules. Each profile defines the inputs to merge as dependencies.
+
 $(BLD_PROF)/%.dts: | $(BLD_PROF)/
 	mkdir -p $(@D)
 	cat $^ > $@
 
-# empty recipes to ignore optional profile overrides that do not exist
-$(CONF_PROF)/%/trch/syscfg.ini \
-$(CONF_PROF)/%/hpps/u-boot/uboot.env:
-	
-
-$(BLD_PROF)/%/trch/prof.syscfg.ini: \
-	$(CONF_BASE)/trch/syscfg.ini \
-	$(CONF_PROF)/%/trch/syscfg.ini \
-	| $(BLD_PROF)/%/trch/
+$(BLD_PROF)/%/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini | $(BLD_PROF)/%/trch/
 	$(TOOLS)/merge-ini $^ > $@
 
-$(BLD_PROF)/%/hpps/prof.hpps-uboot.env: \
-	$(CONF_BASE)/hpps/u-boot/uboot.env \
-	$(CONF_PROF)/%/hpps/u-boot/uboot.env \
-	| $(BLD_PROF)/%/hpps/
+$(BLD_PROF)/%/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env | $(BLD_PROF)/%/hpps/
 	$(TOOLS)/merge-env $^ > $@
 
-$(BLD_PROF)/%/zebu/prof.hpps.mem.map: \
-	$(CONF_BASE)/zebu/hpps-mem.map \
-	$(CONF_PROF)/%/zebu/hpps-mem.map \
-	| $(BLD_PROF)/%/zebu/
+$(BLD_PROF)/%/zebu/prof.hpps.mem.map: $(CONF_BASE)/zebu/hpps-mem.map | $(BLD_PROF)/%/zebu/
 	$(TOOLS)/merge-map $^ > $@
 
 $(BLD_PROF)/%/hpps/initramfs.cpio: $(HPPS_BUSYBOX)/busybox | $(BLD_PROF)/%/hpps/
