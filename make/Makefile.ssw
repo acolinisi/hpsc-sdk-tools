@@ -449,6 +449,11 @@ $(foreach idx,$(HPPS_ZEBU_DDR_IMAGE_INDEXES),$(eval $(call zebu-ddr-rule,hpps,$(
 %.gz: %
 	gzip -c -9 "$<" > "$@"
 
+define dt-rule
+	$(CC) -E -nostdinc -x assembler-with-cpp $(1) -o - $< | \
+		dtc -q -I dts -O dtb -o $@ -
+endef
+
 %.qemu.dtb: %.qemu.dts
 	$(call dt-rule,-I$(QEMU_DT))
 
@@ -462,9 +467,8 @@ $(foreach idx,$(HPPS_ZEBU_DDR_IMAGE_INDEXES),$(eval $(call zebu-ddr-rule,hpps,$(
 %.dtb: %.dts
 	$(call dt-rule,)
 
-define dt-rule
-	$(CC) -E -nostdinc -x assembler-with-cpp $(1) -o - $< | \
-		dtc -q -I dts -O dtb -o $@ -
+define make-uboot-env
+	$(UBOOT_TOOLS)/mkenvimage -s $(1) -o $@ $<
 endef
 
 %.hpps-uboot.env.bin: %.hpps-uboot.env | $(UBOOT_TOOLS)/mkenvimage
@@ -472,10 +476,6 @@ endef
 
 %.syscfg.bin: %.syscfg.ini
 	$(TOOLS)/cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
-
-define make-uboot-env
-	$(UBOOT_TOOLS)/mkenvimage -s $(1) -o $@ $<
-endef
 
 IRF_FR=initramfs.fakeroot
 define copy-initramfs
