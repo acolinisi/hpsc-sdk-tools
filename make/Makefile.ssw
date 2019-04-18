@@ -281,7 +281,7 @@ hpps-initramfs-clean:
 	$(call initramfs-clean,$(BLD)/hpps/initramfs)
 .PHONY: hpps-initramfs hpps-initramfs-clean
 
-# The following targets define profiles
+# Targets that implement profiles (generic across profile)
 
 # Artifacts generated for all profiles
 PROF_COMMON=\
@@ -292,43 +292,7 @@ define prof-common
 $(patsubst %,$(BLD_PROF)/$(1)/%,$(PROF_COMMON))
 endef
 
-# default profile
-
-prof-default: $(call prof-common,default) \
-	$(BLD_PROF)/default/hpps/initramfs.uimg
-
-PROFILES_WITH_ZEBU+=default
-
-# ftrace-extractor profile
-
-$(BLD_PROF)/ftrace-extractor/qemu/prof.qemu.dts: \
-	$(QEMU_DT)/hpsc-arch.dts \
-	$(CONF_BASE)/qemu/dt/hpps-ddr-high-1.dts
-
-$(BLD_PROF)/ftrace-extractor/hpps/prof.hpps-uboot.dts: \
-	$(HPPS_UBOOT)/arch/arm/dts/hpsc-hpps.dts \
-	$(CONF_BASE)/hpps/u-boot/dt/hpps-ddr-high-1.dts
-
-$(BLD_PROF)/ftrace-extractor/hpps/prof.hpps-linux.dts: \
-	$(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dts \
-	$(CONF_BASE)/hpps/linux/dt/gp-mem.dts
-
-prof-ftrace-extractor: $(call prof-common,ftrace-extractor) \
-	$(BLD_PROF)/ftrace-extractor/qemu/prof.qemu.dtb \
-	$(BLD_PROF)/ftrace-extractor/hpps/initramfs.uimg \
-	$(BLD_PROF)/ftrace-extractor/hpps/prof.hpps-linux.dtb \
-	$(BLD_PROF)/ftrace-extractor/hpps/prof.hpps-uboot.dtb
-
-# hpps booti profile
-
-prof-hpps-booti: $(call prof-common,hpps-booti)
-
-$(BLD_PROF)/hpps-booti/hpps/prof.hpps-uboot.env: $(CONF_PROF)/hpps-booti/hpps/u-boot/uboot.env
-$(BLD_PROF)/hpps-booti/zebu/prof.hpps.mem.map: $(CONF_PROF)/hpps-booti/zebu/hpps-mem.map
-
-PROFILES_WITH_ZEBU+=hpps-booti
-
-# Targets that implement profiles (generic as a function of profile)
+include $(CONF_PROF)/*/Makefile.prof # definitions of profiles
 
 .PHONY: prof-%
 
