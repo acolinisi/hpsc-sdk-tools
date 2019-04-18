@@ -189,29 +189,12 @@ $(HPPS_UBOOT)/u-boot.dtb: $(HPPS_UBOOT)/u-boot.bin
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS) u-boot.dtb
 $(HPPS_UBOOT)/tools/mkenvimage:
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS) tools
-hpps-uboot-clean: hpps-uboot-env-clean
+hpps-uboot-clean:
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS) clean
 	rm -f $(HPPS_UBOOT)/.config
-$(BLD)/hpps/uboot.env.bin: $(CONF_BASE)/hpps/u-boot/uboot.env \
-	| $(UBOOT_TOOLS)/mkenvimage
-	$(call make-uboot-env,$(HPPS_UBOOT_ENV_SIZE))
-
-# The following recipe is only used when the user invokes the phony target
-# explicitly. This recipe forces the nested dependency build.  The above
-# non-phony recipes are shallow and do not force a dependency build.
-#
-# The pattern of invoking ourselves from the recipe (to build the artifact that
-# depends on the nested build) is explained below near the linux targets, where
-# the same situation is encountered as here. env.bin can't be a dep of hpps-uboot,
-# because that would allow multiple concurrent invocations of the nested build.
 hpps-uboot: $(HPPS_UBOOT)/.config
 	$(MAKE) -C $(HPPS_UBOOT) $(HPPS_UBOOT_ARGS)
-	$(MAKE) $(BLD)/hpps/uboot.env.bin
-
-hpps-uboot-env: $(BLD)/hpps/uboot.env.bin
-hpps-uboot-env-clean:
-	rm -f $(BLD)/hpps/uboot.env.bin
-.PHONY: hpps-uboot hpps-uboot-clean hpps-uboot-env hpps-uboot-env-clean
+.PHONY: hpps-uboot hpps-uboot-clean
 
 HPPS_LINUX_ARGS=ARCH=arm64 CROSS_COMPILE=$(CROSS_A53)
 $(HPPS_LINUX)/.config: $(HPPS_LINUX)/arch/arm64/configs/hpsc_defconfig
@@ -302,7 +285,8 @@ hpps-initramfs-clean:
 
 # Artifacts generated for all profiles
 PROF_COMMON=\
-	trch/prof.syscfg.bin
+	trch/prof.syscfg.bin \
+	hpps/prof.hpps-uboot.env.bin \
 
 define prof-common
 $(patsubst %,$(BLD_PROF)/$(1)/%,$(PROF_COMMON))
@@ -337,8 +321,7 @@ prof-ftrace-extractor: $(call prof-common,ftrace-extractor) \
 
 # hpps booti profile
 
-prof-hpps-booti: $(call prof-common,hpps-booti) \
-	$(BLD_PROF)/hpps-booti/hpps/prof.hpps-uboot.env.bin
+prof-hpps-booti: $(call prof-common,hpps-booti)
 
 PROFILES_WITH_ZEBU+=hpps-booti
 
@@ -368,8 +351,9 @@ $(BLD_PROF)/%.dts: | $(BLD_PROF)/
 	mkdir -p $(@D)
 	cat $^ > $@
 
-# empty recipe to ignore optional profile overrides that do not exist
-$(CONF_PROF)/%/trch/syscfg.ini:
+# empty recipes to ignore optional profile overrides that do not exist
+$(CONF_PROF)/%/trch/syscfg.ini \
+$(CONF_PROF)/%/hpps/u-boot/uboot.env:
 	
 
 $(BLD_PROF)/%/trch/prof.syscfg.ini: \
