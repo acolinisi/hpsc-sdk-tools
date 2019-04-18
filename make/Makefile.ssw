@@ -145,9 +145,10 @@ rtps-r52-bm-clean:
 RTPS_R52_UBOOT_ARGS=CROSS_COMPILE=$(CROSS_R52)
 $(RTPS_R52_UBOOT)/.config: $(RTPS_R52_UBOOT)/configs/hpsc_rtps_r52_defconfig
 	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) hpsc_rtps_r52_defconfig
-$(RTPS_R52_UBOOT)/u-boot.bin: rtps-r52-uboot
-rtps-r52-uboot: $(RTPS_R52_UBOOT)/.config
+$(RTPS_R52_UBOOT)/u-boot.bin: $(RTPS_R52_UBOOT)/.config
 	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) u-boot.bin
+rtps-r52-uboot:
+	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS)
 rtps-r52-uboot-clean:
 	$(MAKE) -C $(RTPS_R52_UBOOT) $(RTPS_R52_UBOOT_ARGS) clean
 	rm -f $(RTPS_R52_UBOOT)/.config
@@ -156,16 +157,18 @@ rtps-r52-uboot-clean:
 RTPS_A53_UBOOT_ARGS=CROSS_COMPILE=$(CROSS_A53)
 $(RTPS_A53_UBOOT)/.config: $(RTPS_A53_UBOOT)/configs/hpsc_rtps_a53_defconfig
 	$(MAKE) -C $(RTPS_A53_UBOOT) $(RTPS_A53_UBOOT_ARGS) hpsc_rtps_a53_defconfig
-$(RTPS_A53_UBOOT)/u-boot.bin: rtps-a53-uboot
-rtps-a53-uboot: $(RTPS_A53_UBOOT)/u-boot.bin
+$(RTPS_A53_UBOOT)/u-boot.bin: $(RTPS_A53_UBOOT)/u-boot.bin
 	$(MAKE) -C $(RTPS_A53_UBOOT) $(RTPS_A53_UBOOT_ARGS) u-boot.bin
+rtps-a53-uboot:
+	$(MAKE) -C $(RTPS_A53_UBOOT) $(RTPS_A53_UBOOT_ARGS)
 rtps-a53-uboot-clean:
 	$(MAKE) -C $(RTPS_A53_UBOOT) $(RTPS_A53_UBOOT_ARGS) clean
 	rm -f $(RTPS_A53_UBOOT)/.config
 .PHONY: rtps-a53-uboot rtps-a53-uboot-clean
 
 RTPS_A53_ATF_ARGS=PLAT=hpsc_rtps_a53 DEBUG=1 CROSS_COMPILE=$(CROSS_A53)
-$(RTPS_A53_ATF)/build/hpsc_rtps_a53/debug/bl31.bin: rtps-a53-atf
+$(RTPS_A53_ATF)/build/hpsc_rtps_a53/debug/bl31.bin:
+	$(MAKE) -C $(RTPS_A53_ATF) $(RTPS_A53_ATF_ARGS) bl31
 rtps-a53-atf:
 	$(MAKE) -C $(RTPS_A53_ATF) $(RTPS_A53_ATF_ARGS) bl31
 rtps-a53-atf-clean:
@@ -173,7 +176,8 @@ rtps-a53-atf-clean:
 .PHONY: rtps-a53-atf rtps-a53-atf-clean
 
 HPPS_ATF_ARGS=PLAT=hpsc DEBUG=1 CROSS_COMPILE=$(CROSS_A53)
-$(HPPS_ATF)/build/hpsc/debug/bl31.bin: hpps-atf
+$(HPPS_ATF)/build/hpsc/debug/bl31.bin:
+	$(MAKE) -C $(HPPS_ATF) $(HPPS_ATF_ARGS) bl31
 hpps-atf:
 	$(MAKE) -C $(HPPS_ATF) $(HPPS_ATF_ARGS) bl31
 hpps-atf-clean:
