@@ -103,6 +103,8 @@ do
         continue
     fi
 
+    line=$(echo $line | sed 's/\(.*\)\s*#.*/\1/')
+
     KEY=$(extract_word 0 $line)
     ADDR_SPEC=$(extract_word 1 $line)
     TOK2=$(parse_addr $(extract_word 2 $line))
