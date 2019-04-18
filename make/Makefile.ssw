@@ -260,7 +260,7 @@ $(HPPS_BUSYBOX)/.config: $(CONF_BASE)/hpps/busybox/hpsc_hpps_miniconf
 		allnoconfig KCONFIG_ALLCONFIG="$(abspath $<)"
 $(HPPS_BUSYBOX)/busybox: $(HPPS_BUSYBOX)/.config
 	$(MAKE) -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS) busybox
-hpps-busybox:
+hpps-busybox: $(HPPS_BUSYBOX)/.config
 	$(MAKE) -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS)
 hpps-busybox-clean:
 	$(MAKE) -C $(HPPS_BUSYBOX) $(HPPS_BUSYBOX_ARGS) clean
