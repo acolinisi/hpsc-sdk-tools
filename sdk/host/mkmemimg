@@ -26,6 +26,18 @@ parse_addr() {
     echo $1 | sed 's/_//g'
 }
 
+parse_size() {
+    local s="$1"
+    local mag=$(echo $s | sed 's/^\(0x\)\?[0-9]\+\([GMK]\)$/\2/')
+    local sz=$(echo $s | sed 's/^\(0x\)\?\([0-9]\+\).*/\1\2/')
+    case "$mag" in
+    G) local sh=30 ;;
+    M) local sh=20 ;;
+    K) local sh=10 ;;
+    esac
+    echo $(($sz * (1<<$sh)))
+}
+
 hex() {
     printf "0x%x" $1
 }
@@ -121,7 +133,8 @@ do
             exit 2
         fi
         BASE_ADDR=$ADDR
-        SIZE=$TOK2
+        SIZE_STR=$TOK2
+        SIZE=$(parse_size $SIZE_STR)
         continue
     fi
 
@@ -141,7 +154,7 @@ do
             echo "ERROR: file specs begin before mem spec" 1>&2
             exit 2
         fi
-        run truncate --size=$SIZE $OUT_FILE
+        run truncate --size=$SIZE_STR $OUT_FILE
         OUTPUT_READY=1
     fi
 
