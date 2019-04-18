@@ -45,15 +45,20 @@ hex() {
 usage() {
     echo "Usage: $(basename $0) [-hl] map_file output_file"
     echo "       -l : only list input files"
+    echo "       -t : type of memory (dram,sram)"
     echo "       -h : usage information"
 }
 
 LIST_ONLY=0
-while getopts "h?l?" o
+TYPE=dram
+while getopts "h?l?t:" o
 do
     case "${o}" in
     l)
         LIST_ONLY=1
+        ;;
+    t)
+        TYPE="$OPTARG"
         ;;
     h)
         usage
@@ -157,18 +162,38 @@ do
             echo "ERROR: file specs begin before mem spec" 1>&2
             exit 2
         fi
-        run truncate --size=$SIZE_STR $OUT_FILE
+        case "$TYPE" in
+        dram)
+            run truncate --size=$SIZE_STR $OUT_FILE
+            ;;
+        sram)
+	        run sram-image-utils create $OUT_FILE $SIZE
+            ;;
+        esac
         OUTPUT_READY=1
     fi
 
-    OFFSET=$(($ADDR - $BASE_ADDR))
+    case "$TYPE" in
+    dram)
+        OFFSET=$(($ADDR - $BASE_ADDR))
 
-    SEEK=$(($OFFSET/$BLOCK_SIZE))
-    # dd doesn't accept hex, but we want a hex printout
-    echo DD off=$(hex $OFFSET) bs=$(hex $BLOCK_SIZE) seek=$(hex $SEEK) if=$IN_FILE
-    run dd if=$IN_FILE of=$OUT_FILE bs=$BLOCK_SIZE seek=$SEEK conv=notrunc
+        SEEK=$(($OFFSET/$BLOCK_SIZE))
+        # dd doesn't accept hex, but we want a hex printout
+        echo DD off=$(hex $OFFSET) bs=$(hex $BLOCK_SIZE) seek=$(hex $SEEK) if=$IN_FILE
+        run dd if=$IN_FILE of=$OUT_FILE bs=$BLOCK_SIZE seek=$SEEK conv=notrunc
+        ;;
+    sram)
+	    run sram-image-utils add "$OUT_FILE" "$IN_FILE" "$KEY" ${ADDR}
+        ;;
+    esac
     line_num=$(($line_num + 1))
 done < $MAP_FILE
+
+case "$TYPE" in
+sram)
+    run sram-image-utils show "$OUT_FILE"
+    ;;
+esac
 
 cleanup() {
     if [ $LIST_ONLY -eq 0 ]
