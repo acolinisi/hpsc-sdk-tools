@@ -40,8 +40,6 @@ LOG_FILE=/tmp/qemu-$(whoami).log
 BRIDGE=br0
 HOST_BIND_IP=127.0.0.1
 
-SYSCFG_ADDR=0x000ff000 # in TRCH SRAM
-
 HPPS_FW_ADDR=0x80000000
 HPPS_BL_ADDR=0x80020000
 # HPPS_BL_DT_ADDR=$HPPS_BL_ADDR + sizeof($HPPS_BL) # calculated below
@@ -68,6 +66,11 @@ HPPS_NAND_PAGE_SIZE=2048 # bytes
 HPPS_NAND_OOB_SIZE=64 # bytes
 HPPS_NAND_ECC_SIZE=12 # bytes
 HPPS_NAND_PAGES_PER_BLOCK=64 # bytes
+TRCH_NAND_SIZE=0x10000000           # 256MB
+TRCH_NAND_PAGE_SIZE=2048 # bytes
+TRCH_NAND_OOB_SIZE=64 # bytes
+TRCH_NAND_ECC_SIZE=12 # bytes
+TRCH_NAND_PAGES_PER_BLOCK=64 # bytes
 
 # Qemu CPU indexes, used to identify the memory view for loader
 CPU_TRCH=0
@@ -98,37 +101,22 @@ run() {
     "$@"
 }
 
-# create non-volatile offchip sram image
-function create_lsio_smc_sram_port_image()
+function create_sram_image()
 {
-    echo Creating TRCH SMC SRAM image and adding boot images...
-    run "${SRAM_IMAGE_UTILS}" create "${TRCH_SRAM_FILE}" ${LSIO_SRAM_SIZE}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${SYSCFG_BIN}"   "syscfg"  ${SYSCFG_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${RTPS_BL}"      "rtps-bl" ${RTPS_BL_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${RTPS_APP}"     "rtps-os" ${RTPS_APP_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL}"      "hpps-bl" ${HPPS_BL_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL_DT}"   "hpps-bl-dt" ${HPPS_BL_DT_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_BL_ENV}"  "hpps-bl-env" ${HPPS_BL_ENV_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_FW}"      "hpps-fw" ${HPPS_FW_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_DT}"      "hpps-dt" ${HPPS_DT_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_KERN}"    "hpps-os" ${HPPS_KERN_ADDR}
-    run "${SRAM_IMAGE_UTILS}" add "${TRCH_SRAM_FILE}" "${HPPS_INITRAMFS}" "hpps-initramfs" ${HPPS_INITRAMFS_ADDR}
-    run "${SRAM_IMAGE_UTILS}" show "${TRCH_SRAM_FILE}"
+    run "${SRAM_IMAGE_UTILS}" create "$1" "$2"
+    run "${SRAM_IMAGE_UTILS}" show "$1"
 }
 
-function create_hpps_smc_sram_port_image()
+create_nand_image()
 {
-    echo Creating an empty image for off-chip mem at HPPS SMC SRAM port...
-    run "${SRAM_IMAGE_UTILS}" create "${HPPS_SRAM_FILE}" ${HPPS_SRAM_SIZE}
-    run "${SRAM_IMAGE_UTILS}" show "${HPPS_SRAM_FILE}"
-}
-
-create_hpps_smc_nand_port_image()
-{
-    echo Creating an empty image for off-chip mem at HPPS SMC NAND port...
-    local blocks=$(nand_blocks $HPPS_NAND_SIZE $HPPS_NAND_PAGE_SIZE $HPPS_NAND_PAGES_PER_BLOCK)
-    run "${NAND_CREATOR}" $HPPS_NAND_PAGE_SIZE $HPPS_NAND_OOB_SIZE $HPPS_NAND_PAGES_PER_BLOCK \
-                "$blocks" $HPPS_NAND_ECC_SIZE 1 "${HPPS_NAND_IMAGE}"
+    local file=$1
+    local size=$2
+    local page_size=$3
+    local pages_per_block=$4
+    local oob_size=$5
+    local ecc_size=$6
+    local blocks="$(nand_blocks $size $page_size $pages_per_block)"
+    run "${NAND_CREATOR}" $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
 }
 
 create_kern_image() {
@@ -141,14 +129,22 @@ syscfg_get()
     python -c "import configparser as cp; c = cp.ConfigParser(); c.read('$SYSCFG'); print(c['$1']['$2'])"
 }
 
-# file path, creation function
 create_if_absent()
 {
-    if [ ! -f "$1" ]
+    local dest=$1
+    local src=$2
+    local creator=$3
+    shift 3
+    if [ -f "$src" ] # if a source is given, override current image
     then
-        $2
+        run cp $src $dest
     else
-        echo "Using existing image: $1"
+        if [ ! -f "$dest" ]
+        then
+            $creator "$dest" "$@"
+        else
+            echo "Using existing image: $dest"
+        fi
     fi
 }
 
@@ -161,9 +157,12 @@ create_images()
         create_kern_image
     fi
 
-    create_lsio_smc_sram_port_image
-    create_if_absent "${HPPS_SRAM_FILE}" create_hpps_smc_sram_port_image
-    create_if_absent "${HPPS_NAND_IMAGE}" create_hpps_smc_nand_port_image
+    create_if_absent "${TRCH_SRAM_FILE}" "${TRCH_SMC_SRAM}" create_sram_image ${LSIO_SRAM_SIZE}
+    create_if_absent "${TRCH_NAND_FILE}" "${TRCH_SMC_NAND}" create_nand_image \
+        $TRCH_NAND_SIZE $TRCH_NAND_PAGE_SIZE $TRCH_NAND_PAGES_PER_BLOCK $TRCH_NAND_OOB_SIZE $TRCH_NAND_ECC_SIZE
+    create_if_absent "${HPPS_SRAM_FILE}" "${HPPS_SMC_SRAM}" create_sram_image ${HPPS_SRAM_SIZE}
+    create_if_absent "${HPPS_NAND_FILE}" "${HPPS_SMC_NAND}" create_nand_image \
+        $HPPS_NAND_SIZE $HPPS_NAND_PAGE_SIZE $HPPS_NAND_PAGES_PER_BLOCK $HPPS_NAND_OOB_SIZE $HPPS_NAND_ECC_SIZE
     set +e
 }
 
@@ -354,7 +353,8 @@ fi
 
 
 TRCH_SRAM_FILE=trch_sram.bin.${ID}
-HPPS_NAND_IMAGE=rootfs_nand.bin.${ID}
+TRCH_NAND_FILE=trch_nand.bin.${ID}
+HPPS_NAND_FILE=rootfs_nand.bin.${ID}
 HPPS_SRAM_FILE=hpps_sram.bin.${ID}
 
 # Support legacy setup where the kernel image is not created by the build
@@ -454,7 +454,7 @@ COMMAND=("${GDB_ARGS[@]}" "${QEMU_BIN_DIR}/qemu-system-aarch64"
     -D "${LOG_FILE}" -d "fdt,guest_errors,unimp,cpu_reset"
     -hw-dtb "${QEMU_DT_FILE}"
     "${SERIAL_PORT_ARGS[@]}"
-    -drive "file=$HPPS_NAND_IMAGE,if=pflash,format=raw,index=3"
+    -drive "file=$HPPS_NAND_FILE,if=pflash,format=raw,index=3"
     -drive "file=$HPPS_SRAM_FILE,if=pflash,format=raw,index=2"
     -drive "file=$TRCH_SRAM_FILE,if=pflash,format=raw,index=0"
     "${QEMU_ARGS[@]}")
