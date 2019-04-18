@@ -333,6 +333,9 @@ do
     source_if_exists ${qemu_env}
 done
 
+SRAM_IMAGE_UTILS=${TOOLS}/sram-image-utils
+NAND_CREATOR=${TOOLS}/qemu-nand-creator
+
 HPPS_BL_DT_ADDR=$(printf "0x%x" $((${HPPS_BL_ADDR} + $(stat -c %s ${HPPS_BL}) )))
 
 # Privatize generated files, ports, screen sessions for this Qemu instance
