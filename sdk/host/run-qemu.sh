@@ -119,11 +119,6 @@ create_nand_image()
     run "${NAND_CREATOR}" $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
 }
 
-create_kern_image() {
-    echo Packing the kernel binary into a U-boot image...
-    run mkimage -C gzip -A arm64 -d "${HPPS_KERN_BIN}" -a ${HPPS_KERN_LOAD_ADDR} "${HPPS_KERN}"
-}
-
 syscfg_get()
 {
     python -c "import configparser as cp; c = cp.ConfigParser(); c.read('$SYSCFG'); print(c['$1']['$2'])"
@@ -151,11 +146,6 @@ create_if_absent()
 create_images()
 {
     set -e
-
-    if [ $CREATE_KERN_IMAGE -eq 1 ]
-    then
-        create_kern_image
-    fi
 
     create_if_absent "${TRCH_SRAM_FILE}" "${TRCH_SMC_SRAM}" create_sram_image ${LSIO_SRAM_SIZE}
     create_if_absent "${TRCH_NAND_FILE}" "${TRCH_SMC_NAND}" create_nand_image \
@@ -356,19 +346,6 @@ TRCH_SRAM_FILE=trch_sram.bin.${ID}
 TRCH_NAND_FILE=trch_nand.bin.${ID}
 HPPS_NAND_FILE=rootfs_nand.bin.${ID}
 HPPS_SRAM_FILE=hpps_sram.bin.${ID}
-
-# Support legacy setup where the kernel image is not created by the build
-CREATE_KERN_IMAGE=0
-if [ -z "$HPPS_KERN" ]
-then
-    if [ -z "$HPPS_KERN_BIN" ] # kernel image is created from this file
-    then
-        echo "ERROR: neither HPPS_KERN nor HPPS_KERN_BIN is defined" 2>&1
-        exit 1
-    fi
-    CREATE_KERN_IMAGE=1
-    HPPS_KERN=uImage.${ID}
-fi
 
 MAC_ADDR=00:0a:35:00:02:$ID
 # This target IP is for 'user' networking mode, where the address is private,
