@@ -279,6 +279,7 @@ PROFILES=$(notdir $(wildcard $(CONF_PROF)/*))
 PROF_COMMON=\
 	qemu/prof.qemu.dtb \
 	trch/prof.syscfg.bin \
+	trch/prof.sram.mem.bin \
 	hpps/prof.hpps-uboot.env.bin \
 	hpps/initramfs.uimg \
 
@@ -288,13 +289,15 @@ endef
 
 # We cannot append deps to pattern rules, so have to use explicit rules.
 define merge-base-rules
+$(BLD_PROF)/$(1)/%: export PROF=$(1)
 prof-$(1): $(call prof-common,$(1))
 $(BLD_PROF)/$(1)/qemu/prof.qemu.dts: $(QEMU_DT)/hpsc-arch.dts | $(BLD_PROF)/$(1)/qemu/
 $(BLD_PROF)/$(1)/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini | $(BLD_PROF)/$(1)/trch/
+$(BLD_PROF)/$(1)/trch/prof.sram.mem.map: $(CONF_BASE)/trch/sram.mem.map | $(BLD_PROF)/$(1)/trch/
 $(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env | $(BLD_PROF)/$(1)/hpps/
 $(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.dts: $(HPPS_UBOOT)/arch/arm/dts/hpsc-hpps.dts | $(BLD_PROF)/$(1)/hpps/
 $(BLD_PROF)/$(1)/hpps/prof.hpps-linux.dts: $(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dts | $(BLD_PROF)/$(1)/hpps/
-$(BLD_PROF)/$(1)/zebu/prof.hpps.mem.map: $(CONF_BASE)/zebu/hpps-mem.map | $(BLD_PROF)/$(1)/zebu/
+$(BLD_PROF)/$(1)/zebu/prof.hpps.dram.mem.map: $(CONF_BASE)/zebu/hpps-mem.map | $(BLD_PROF)/$(1)/zebu/
 endef
 $(foreach prof,$(PROFILES),$(eval $(call merge-base-rules,$(prof))))
 
@@ -351,23 +354,28 @@ prof-%-hpps-initramfs-clean:
 	rm -rf $(BLD_PROF)/$*/hpps/initramfs{/,.uimg,.cpio,.cpio.gz,.fakeroot}
 .PHONY: prof-%-hpps-initramfs prof-%-hpps-initramfs-clean
 
+# Memory images
+
+ifeq ($(filter %-clean,$(MAKECMDGOALS)),)
+-include $(foreach prof,$(PROFILES),\
+		$(BLD_PROF)/$(prof)/trch/prof.sram.mem.rule)
+endif
+
 # Zebu targets
 
 # Note the empty recipe. Not sure why it does not work without it.
-prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.zebu.mem.bin
+prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.dram.mem.bin
 # Enable the following to also generate striped images (.bin or .vhex)
 # prof-%-zebu-hpps: $(BLD_PROF)/%/zebu/prof.hpps.zebu.x.ddr.bin
 	
 .PHONY: prof-%-zebu-hpps
 prof-%-zebu-hpps-clean:
-	rm -rf $(BLD_PROF)/$*/zebu/prof.hpps.zebu.{mem.bin,*.ddr.bin,mem.rule} \
-		$(BLD_PROF)/$*/zebu/hpps.{mem.map,mem.dep,zebu}
+	rm -rf $(BLD_PROF)/$*/zebu/prof.hpps.dram.mem.{bin,dep,rule} \
+		$(BLD_PROF)/$*/zebu/hpps.zebu.*.ddr.bin
 .PHONY: prof-%-zebu-hpps prof-%-zebu-hpps-clean
 
 ifeq ($(filter %-clean,$(MAKECMDGOALS)),)
 ifneq ($(findstring zebu,$(MAKECMDGOALS)),)
-$(info INCLUDE $(foreach prof,$(PROFILES_WITH_ZEBU),\
-		$(BLD_PROF)/$(prof)/zebu/prof.hpps.zebu.mem.rule))
 -include $(foreach prof,$(PROFILES_WITH_ZEBU),\
 		$(BLD_PROF)/$(prof)/zebu/prof.hpps.zebu.mem.rule)
 endif
@@ -377,11 +385,14 @@ endif
 %.mem.dep: %.mem.map
 	$(TOOLS)/mkmemimg -l $< > $@
 
-%.zebu.mem.rule: %.mem.dep
+%.mem.rule: %.mem.dep
 	sed 's#^#$(patsubst %.rule,%.bin,$@): #' $< > $@
 
-%.zebu.mem.bin: %.mem.map
-	$(TOOLS)/mkmemimg $< $@
+%.sram.mem.bin: TYPE=sram
+%.dram.mem.bin: TYPE=dram
+
+%.mem.bin: %.mem.map
+	$(TOOLS)/mkmemimg -t $(TYPE) $< $@
 
 # The touch is a workaround for .INTERMEDIATE not accepting patterns,
 # otherwise, we would mark the master target intermediate without a real file.
@@ -398,7 +409,7 @@ define zebu-ddr-rule
 	
 endef
 
-%.hpps.zebu.x.ddr.bin: %.hpps.zebu.mem.bin
+%.hpps.zebu.x.ddr.bin: %.hpps.dram.mem.bin
 	$(call zebu-stripe-ddr,$(HPPS_DRAM_ADDR),$(HPPS_ZEBU_DDR_IMAGE_INDEXES))
 #.INTERMEDIATE: %.hpps.zebu.x.ddr.bin # patterns do not work here (use touch+PRECIOUS)
 .PRECIOUS: %.hpps.zebu.x.ddr.bin
