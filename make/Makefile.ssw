@@ -313,6 +313,11 @@ prof-%-clean:
 	rm -rf $(BLD_PROF)/$*/
 .PHONY: prof-%-clean
 
+prof-%-run: | $(BLD_PROF)/run/
+	export ROOT=$$PWD PROF=$* && cd $(BLD_PROF)/run && \
+		run-qemu.sh -e $$ROOT/$(BLD_PROF)/$*/qemu/prof.qemu-env.sh
+.PHONY: prof-%-run
+
 # Merging rules. Each profile defines the inputs to merge as dependencies.
 
 $(BLD_PROF)/%.dts $(BLD_PROF)/%.sh:
