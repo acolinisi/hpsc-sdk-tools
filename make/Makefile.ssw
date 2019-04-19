@@ -278,6 +278,7 @@ PROFILES=$(notdir $(wildcard $(CONF_PROF)/*))
 # Artifacts generated for all profiles
 PROF_COMMON=\
 	qemu/prof.qemu.dtb \
+	qemu/prof.preload.mem.map \
 	trch/prof.syscfg.bin \
 	trch/prof.sram.mem.bin \
 	hpps/prof.hpps-uboot.env.bin \
@@ -292,6 +293,7 @@ define merge-base-rules
 $(BLD_PROF)/$(1)/%: export PROF=$(1)
 prof-$(1): $(call prof-common,$(1))
 $(BLD_PROF)/$(1)/qemu/prof.qemu.dts: $(QEMU_DT)/hpsc-arch.dts | $(BLD_PROF)/$(1)/qemu/
+$(BLD_PROF)/$(1)/qemu/prof.preload.mem.map: $(CONF_BASE)/qemu/preload.mem.map | $(BLD_PROF)/$(1)/qemu/
 $(BLD_PROF)/$(1)/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini | $(BLD_PROF)/$(1)/trch/
 $(BLD_PROF)/$(1)/trch/prof.sram.mem.map: $(CONF_BASE)/trch/sram.mem.map | $(BLD_PROF)/$(1)/trch/
 $(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env | $(BLD_PROF)/$(1)/hpps/
