@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # Construct the QEMU command line and invoke it
-
+#
+# Expects SDK to have been activated by loading
+# the SDK env.sh script into the shell.
+#
 # Dependencies:
 #   * screen : for display of forwarded serial UART ports
 #   * Python 2: with the following modules
@@ -94,8 +97,8 @@ run() {
 
 function create_sram_image()
 {
-    run "${SRAM_IMAGE_UTILS}" create "$1" "$2"
-    run "${SRAM_IMAGE_UTILS}" show "$1"
+    run sram-image-utils create "$1" "$2"
+    run sram-image-utils show "$1"
 }
 
 create_nand_image()
@@ -107,7 +110,7 @@ create_nand_image()
     local oob_size=$5
     local ecc_size=$6
     local blocks="$(nand_blocks $size $page_size $pages_per_block)"
-    run "${NAND_CREATOR}" $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
+    run qemu-nand-creator $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
 }
 
 create_if_absent()
@@ -187,7 +190,7 @@ function setup_screen()
 
 function serial_ptys()
 {
-    ${TOOLS}/qmp.py -q localhost $QMP_PORT query-chardev | \
+    qmp.py -q localhost $QMP_PORT query-chardev | \
         qemu-chardev-ptys ${SERIAL_PORTS[*]}
 }
 
@@ -238,7 +241,7 @@ function attach_consoles()
     if [ "$RESET" -eq 1 ]
     then
         echo "Sending 'continue' command to Qemu to reset the machine..."
-        ${TOOLS}/qmp.py localhost $QMP_PORT cont
+        qmp.py localhost $QMP_PORT cont
     else
         echo "Waiting for 'continue' (aka. reset) command via GDB or QMP connection..."
     fi
@@ -378,9 +381,6 @@ do
    echo QEMU ENV ${qemu_env}
     source_if_exists ${qemu_env}
 done
-
-SRAM_IMAGE_UTILS=${TOOLS}/sram-image-utils
-NAND_CREATOR=${TOOLS}/qemu-nand-creator
 
 # Privatize generated files, ports, screen sessions for this Qemu instance
 
