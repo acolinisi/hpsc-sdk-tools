@@ -112,7 +112,7 @@ do
 
     KEY=$(extract_word 0 $line)
     ADDR_SPEC=$(extract_word 1 $line)
-    TOK2=$(parse_addr $(extract_word 2 $line))
+    TOK2=$(extract_word 2 $line)
 
     if [[ -z "$ADDR_SPEC" || -z "$TOK2" ]]
     then
