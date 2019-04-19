@@ -35,6 +35,12 @@ LOG_FILE=/tmp/qemu-$(whoami).log
 BRIDGE=br0
 HOST_BIND_IP=127.0.0.1
 
+# Source files from which to init mem images (none by default)
+TRCH_SMC_SRAM=
+TRCH_SMC_NAND=
+HPPS_SMC_SRAM=
+HPPS_SMC_NAND=
+
 # Size of off-chip memory connected to SMC SRAM ports,
 # this size is used if/when this script creates the images.
 LSIO_SRAM_SIZE=0x04000000           #  64MB
