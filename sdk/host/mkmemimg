@@ -51,7 +51,8 @@ usage() {
 
 LIST_ONLY=0
 TYPE=dram
-while getopts "h?l?t:" o
+VERBOSE=0
+while getopts "h?l?v?t:" o
 do
     case "${o}" in
     l)
@@ -59,6 +60,9 @@ do
         ;;
     t)
         TYPE="$OPTARG"
+        ;;
+    v)
+        VERBOSE=1
         ;;
     h)
         usage
@@ -190,11 +194,14 @@ do
     line_num=$(($line_num + 1))
 done < $MAP_FILE
 
-case "$TYPE" in
-sram)
-    run sram-image-utils show "$OUT_FILE"
-    ;;
-esac
+if [ $VERBOSE -eq 1 ]
+then
+    case "$TYPE" in
+    sram)
+        run sram-image-utils show "$OUT_FILE"
+        ;;
+    esac
+fi
 
 cleanup() {
     if [ $LIST_ONLY -eq 0 ]
