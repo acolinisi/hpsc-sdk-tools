@@ -476,7 +476,7 @@ fi
 # Note: If you want to see instructions and exceptions at a large performance cost, then add
 # "in_asm,int" to the list of categories in -d.
 
-COMMAND=("${GDB_ARGS[@]}" "${QEMU_BIN_DIR}/qemu-system-aarch64"
+COMMAND=("${GDB_ARGS[@]}" "qemu-system-aarch64"
     -machine "arm-generic-fdt"
     -nographic
     -qmp "telnet::$QMP_PORT,server,nowait"
@@ -495,9 +495,9 @@ case "${NET}" in
 tap)
     # See HPSC Qemu User Guide for setup. In short, do this once, as root:
     #     ip link add $BRIDGE type bridge
-    #     echo "allow $BRIDGE" >> $QEMU_PREFIX/etc/qemu/bridge.conf
-    #     install -o root -g root -m 4775 $QEMU_DIR/qemu-bridge-helper $QEMU_PREFIX/bin/
-    COMMAND+=("${NET_NIC[@]}" -net tap,vlan=0,br=$BRIDGE,helper=$QEMU_PREFIX/bin/qemu-bridge-helper)
+    #     echo "allow $BRIDGE" >> /usr/local/etc/qemu/bridge.conf
+    #     install -o root -g root -m 4775 /usr/local/bin/qemu-bridge-helper $QEMU_BRIDGE_PREFIX
+    COMMAND+=("${NET_NIC[@]}" -net tap,vlan=0,br=$BRIDGE,helper=qemu-bridge-helper)
     ;;
 user)
     PORT_FWD_ARGS="hostfwd=tcp:$HOST_BIND_IP:$SSH_PORT-$TARGET_IP:$SSH_TARGET_PORT"
