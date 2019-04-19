@@ -103,7 +103,8 @@ SIZE=
 line_num=0
 while read line
 do
-    if [[ "$line" =~ ^\s*$ || "$line" =~ ^[[:space:]]*# ]]
+    HASH="#"
+    if [[ "$line" =~ ^\s*$ || "$line" =~ ^[[:space:]]*$HASH ]]
     then
         continue
     fi
