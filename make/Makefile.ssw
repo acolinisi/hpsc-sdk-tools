@@ -321,16 +321,16 @@ prof-%-run: | $(BLD_PROF)/run/
 # Merging rules. Each profile defines the inputs to merge as dependencies.
 
 $(BLD_PROF)/%.dts $(BLD_PROF)/%.sh:
-	cat $(INPUTS) $^ > $@
+	cat $^ > $@
 
 $(BLD_PROF)/%.ini:
-	$(TOOLS)/merge-ini $(INPUTS) $^ > $@
+	$(TOOLS)/merge-ini $^ > $@
 
 $(BLD_PROF)/%.env:
-	$(TOOLS)/merge-env $(INPUTS) $^ > $@
+	$(TOOLS)/merge-env $^ > $@
 
 $(BLD_PROF)/%.mem.map:
-	$(TOOLS)/merge-map $(INTPUTS) $^ > $@
+	$(TOOLS)/merge-map $^ > $@
 
 IRF_FR=initramfs.fakeroot
 $(BLD_PROF)/%/hpps/initramfs.cpio: $(wildcard \
