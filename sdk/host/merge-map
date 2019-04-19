@@ -10,6 +10,16 @@ parser.add_argument('input', nargs='+',
     help='Input files with memory maps to merge')
 args = parser.parse_args()
 
+def write_fields(f, *fields):
+    TAB_WIDTH = 8 # spaces
+    FIELD_WIDTH = 4 # tabs
+    for e in fields:
+        tabs = FIELD_WIDTH - len(e) / TAB_WIDTH
+        tabs = tabs if tabs >= 0 else 0
+        padding = "\t" * tabs
+        f.write(e + padding)
+    f.write("\n")
+
 d = OrderedDict()
 for f in args.input:
     fin = open(f, "r")
@@ -34,4 +44,4 @@ for f in args.input:
     fin.close()
 
 for k in d:
-    sys.stdout.write(k + "\t" + d[k]["addr"] + "\t" + d[k]["fname"] + "\n")
+    write_fields(sys.stdout, k, d[k]["addr"], d[k]["fname"])
