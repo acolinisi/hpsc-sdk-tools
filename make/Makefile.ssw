@@ -369,8 +369,6 @@ prof-%-hpps-initramfs-clean:
 	rm -rf $(BLD_PROF)/$*/hpps/initramfs{/,.uimg,.cpio,.cpio.gz,.fakeroot}
 .PHONY: prof-%-hpps-initramfs prof-%-hpps-initramfs-clean
 
-# Memory images
-
 ifeq ($(filter %-clean,$(MAKECMDGOALS)),)
 -include $(foreach prof,$(PROFILES),\
 		$(BLD_PROF)/$(prof)/trch/prof.sram.mem.rule)
@@ -396,19 +394,6 @@ ifneq ($(findstring zebu,$(MAKECMDGOALS)),)
 endif
 endif
 
-# Extract dependencies from a memory map file into a rule file
-%.mem.dep: %.mem.map
-	$(TOOLS)/mkmemimg -l $< > $@
-
-%.mem.rule: %.mem.dep
-	sed 's#^#$(patsubst %.rule,%.bin,$@): #' $< > $@
-
-%.sram.mem.bin: TYPE=sram
-%.dram.mem.bin: TYPE=dram
-
-%.mem.bin: %.mem.map
-	$(TOOLS)/mkmemimg -t $(TYPE) $< $@
-
 # The touch is a workaround for .INTERMEDIATE not accepting patterns,
 # otherwise, we would mark the master target intermediate without a real file.
 define zebu-stripe-ddr
@@ -429,6 +414,21 @@ endef
 #.INTERMEDIATE: %.hpps.zebu.x.ddr.bin # patterns do not work here (use touch+PRECIOUS)
 .PRECIOUS: %.hpps.zebu.x.ddr.bin
 $(foreach idx,$(HPPS_ZEBU_DDR_IMAGE_INDEXES),$(eval $(call zebu-ddr-rule,hpps,$(idx))))
+
+# Generic recipes re-used throughout the build
+
+# Extract dependencies from a memory map file into a rule file
+%.mem.dep: %.mem.map
+	$(TOOLS)/mkmemimg -l $< > $@
+
+%.mem.rule: %.mem.dep
+	sed 's#^#$(patsubst %.rule,%.bin,$@): #' $< > $@
+
+%.sram.mem.bin: TYPE=sram
+%.dram.mem.bin: TYPE=dram
+
+%.mem.bin: %.mem.map
+	$(TOOLS)/mkmemimg -t $(TYPE) $< $@
 
 %.vhex: %.bin
 	$(TOOLS)/hpsc-objcopy -I binary -O Verilog-H $< $@
