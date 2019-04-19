@@ -1,20 +1,12 @@
 #!/bin/bash
 
-# Note: Before running the following script, please make sure to:
-#
-# 1.  Run the "build-hpsc-yocto.sh" script to generate many of the needed QEMU
-#     files.
-#
-# 2.  Run the "build-hpsc-baremetal.sh" script (with the proper toolchain
-#     path) to create the baremetal firmware files "trch.elf" and "rtps.elf".
-#
+# Construct the QEMU command line and invoke it
+
 # Dependencies:
-#   * uboot-tools : for creating U-boot images
 #   * screen : for display of forwarded serial UART ports
 #   * Python 2: with the following modules
 #      - telnetlib : for communication with Qemu via QMP interface
-#      - configparse : for config INI->BIN compiler (cfgc)
-#      - json : for QMP and for cfgc
+#      - json : for QMP
 
 function finish {
     if [ -n "$GDB_CMD_FILE" ]
@@ -40,23 +32,6 @@ LOG_FILE=/tmp/qemu-$(whoami).log
 BRIDGE=br0
 HOST_BIND_IP=127.0.0.1
 
-HPPS_FW_ADDR=0x80000000
-HPPS_BL_ADDR=0x80020000
-# HPPS_BL_DT_ADDR=$HPPS_BL_ADDR + sizeof($HPPS_BL) # calculated below
-HPPS_BL_ENV_ADDR=0x8005f000
-HPPS_DT_ADDR=0x80060000
-HPPS_KERN_ADDR=0x80064000
-HPPS_INITRAMFS_ADDR=0x80500000
-HPPS_KERN_LOAD_ADDR=0x80680000 # (base + TEXT_OFFSET), where base must be aligned to 2MB
-
-# RTPS
-RTPS_BL_ADDR=0x60000000       # load address for R52 u-boot
-RTPS_APP_ADDR=0x68000000      # address of baremetal app binary file
-# RTPS_APP_LOAD_ADDR          # where BL loads image: set u-boot image (from ELF header)
-
-# TRCH
-# TRCH_APP_LOAD_ADDR          # where ELF sections are loaded, set in the ELF header
-
 # Size of off-chip memory connected to SMC SRAM ports,
 # this size is used if/when this script creates the images.
 LSIO_SRAM_SIZE=0x04000000           #  64MB
@@ -72,11 +47,6 @@ TRCH_NAND_OOB_SIZE=64 # bytes
 TRCH_NAND_ECC_SIZE=12 # bytes
 TRCH_NAND_PAGES_PER_BLOCK=64 # bytes
 
-# Qemu CPU indexes, used to identify the memory view for loader
-CPU_TRCH=0
-CPU_RTPS=1
-CPU_HPPS=4
-
 # Environment settings (paths to build artifacts and tools and the default
 # settings defined above) may be overriden by placing the file at multiple
 # locations (vars in later files override vars in earlier files):
@@ -88,6 +58,27 @@ CONF_QEMU_ENV=qemu/$QEMU_ENV
 # More added later in this script
 ENV_FILES=("${SCRIPT_DIR}/${QEMU_ENV}"
             "${CONF_DIR}/base/${CONF_QEMU_ENV}")
+
+parse_addr() {
+    echo $1 | sed 's/_//g'
+}
+hex() {
+    printf "0x%x" $1
+}
+extract_word() {
+    IDX=$1
+    shift
+    local i=0
+    for w in "$@"
+    do
+        if [ $i -eq $IDX ]
+        then
+            echo $w
+            return
+        fi
+        i=$(($i + 1))
+    done
+}
 
 function nand_blocks() {
     local size=$1
@@ -117,11 +108,6 @@ create_nand_image()
     local ecc_size=$6
     local blocks="$(nand_blocks $size $page_size $pages_per_block)"
     run "${NAND_CREATOR}" $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
-}
-
-syscfg_get()
-{
-    python -c "import configparser as cp; c = cp.ConfigParser(); c.read('$SYSCFG'); print(c['$1']['$2'])"
 }
 
 create_if_absent()
@@ -158,10 +144,11 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-p prof]  [-n netcfg] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-m mem] [-p prof] [-n netcfg] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
+    echo "               -m memory map: preload files into memory" 1>&2
     echo "               -p profile: configuration profile to run" 1>&2
     echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
     echo "               -n netcfg : choose networking configuration" 1>&2
@@ -266,20 +253,89 @@ setup_console()
     attach_consoles &
 }
 
+preload_memory()
+{
+    set -e
+    local map_file=$1
+    echo "Preloading memory according to map file: $map_file"
+    if [ ! -r ${map_file} ] # 'while...done < file' not fatal even with set -e
+    then
+        echo "ERROR: can't read preload memory map file: $map_file" 1>&2
+        return 1
+    fi
+    declare -A SEGMENT_ADDRS
+    declare -A SEGMENT_FILES
+    local line_num=0
+    while read line
+    do
+        local HASH="#" # workaround for vim syntax highlightin breaking
+        if [[ "$line" =~ ^\s*$ || "$line" =~ ^[[:space:]]*$HASH ]]
+        then
+            continue
+        fi
+        line=$(echo $line | sed 's/\(.*\)\s*#.*/\1/')
+
+        local key=$(extract_word 0 $line)
+        local addr_spec=$(extract_word 1 $line)
+        local in_file=$(eval echo $(extract_word 2 $line)) # expand vars
+
+        if [[ -z "$key" || -z "$addr_spec" || -z "$in_file" ]]
+        then
+            echo "ERROR: syntax error on line $line_num" 1>&2
+            exit 2
+        fi
+
+        # Address field can be: 0x00000000, 0x0000_0000, after(name), -, 4:<any of the above>
+        local cpu="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+\):.*/\1/p')" # may be empty
+        addr_spec="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+:\)\?\(.*\)/\2/p')"
+        local ref_seg=$(echo $addr_spec | sed -n 's/^after(\([^)]\+\))/\1/p')
+        if [ ! -z "$ref_seg" ]
+        then
+            local addr=$(hex $((${SEGMENT_ADDRS[$ref_seg]} + $(stat -c '%s' ${SEGMENT_FILES[$ref_seg]}))))
+        else
+            if [[ "$addr_spec" =~ - ]]
+            then  # do not supply addr
+                local addr=
+            else
+                local addr="$(parse_addr $(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f_]\+\)/\1\2/p'))"
+            fi
+        fi
+        SEGMENT_ADDRS["$key"]="$addr"
+        SEGMENT_FILES["$key"]="$in_file"
+
+        local loader_arg="loader,file=$in_file"
+        if [ ! -z "$cpu" ]
+        then
+            loader_arg+=",cpu-num=$cpu"
+        fi
+        if [ ! -z "$addr" ]
+        then
+            loader_arg+=",force-raw,addr=$addr"
+        fi
+        COMMAND+=(-device "$loader_arg")
+
+        line_num=$(($line_num + 1))
+    done < $map_file
+    set +e
+}
+
 # defaults
 RESET=1
 NET=user
 MONITOR=1
-PROFILE=default
+PROF=default
 
 # parse options
-while getopts "h?S?q?p:n:i:" o; do
+while getopts "h?S?q?m:p:n:i:" o; do
     case "${o}" in
         S)
             RESET=0
             ;;
+        m)
+            MEMORY_FILE="$OPTARG"
+            ;;
         p)
-            PROFILE="$OPTARG"
+            PROF="$OPTARG"
             ;;
         i)
             CLI_ID="$OPTARG"
@@ -307,10 +363,10 @@ then
     CMD="run"
 fi
 
-PROF_DIR=${CONF_DIR}/prof/${PROFILE}
+PROF_DIR=${CONF_DIR}/prof/${PROF}
 if [ ! -d "${PROF_DIR}" ]
 then
-    echo "ERROR: proflie ${PROFILE} not found at: ${PROF_DIR}" 1>&2
+    echo "ERROR: profile ${PROF} not found at: ${PROF_DIR}" 1>&2
     exit 1
 fi
 ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}")
@@ -325,8 +381,6 @@ done
 
 SRAM_IMAGE_UTILS=${TOOLS}/sram-image-utils
 NAND_CREATOR=${TOOLS}/qemu-nand-creator
-
-HPPS_BL_DT_ADDR=$(printf "0x%x" $((${HPPS_BL_ADDR} + $(stat -c %s ${HPPS_BL}) )))
 
 # Privatize generated files, ports, screen sessions for this Qemu instance
 
@@ -463,35 +517,10 @@ then
     COMMAND+=(-monitor stdio)
 fi
 
-BOOT__BIN_LOC=$(syscfg_get boot bin_loc)
-if [ $? -ne 0 ]; then echo "ERROR: syscfg_get failed" && exit 1; fi
-
-if [ "$BOOT__BIN_LOC" = "DRAM" ]
+if [ ! -z "${MEMORY_FILE}" ]
 then
-    # The following two are used only for developer-friendly boot mode in which
-    # Qemu loads the images directly into DRAM upon startup of the machine (not
-    # possible on real HW).
-    COMMAND+=(
-        -device "loader,addr=${RTPS_BL_ADDR},file=${RTPS_BL},force-raw,cpu-num=${CPU_RTPS}"
-        -device "loader,addr=${RTPS_APP_ADDR},file=${RTPS_APP},force-raw,cpu-num=${CPU_RTPS}"
-        -device "loader,addr=${HPPS_FW_ADDR},file=${HPPS_FW},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_BL_ADDR},file=${HPPS_BL},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_BL_DT_ADDR},file=${HPPS_BL_DT},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_BL_ENV_ADDR},file=${HPPS_BL_ENV},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_DT_ADDR},file=${HPPS_DT},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_KERN_ADDR},file=${HPPS_KERN},force-raw,cpu-num=${CPU_HPPS}"
-        -device "loader,addr=${HPPS_INITRAMFS_ADDR},file=${HPPS_INITRAMFS},force-raw,cpu-num=${CPU_HPPS}"
-	)
+    preload_memory "${MEMORY_FILE}"
 fi
-
-if [[ ! -z "${HPPS_RAMOOPS}" && ! -z "${HPPS_RAMOOPS_ADDR}" ]]
-then
-    COMMAND+=(-device "loader,addr=${HPPS_RAMOOPS_ADDR},file=${HPPS_RAMOOPS},force-raw,cpu-num=${CPU_HPPS}")
-fi
-
-# Storing TRCH code in NV mem is not yet supported, so it is loaded directly
-# into TRCH SRAM by Qemu's ELF loader on machine startup
-COMMAND+=(-device "loader,file=${TRCH_APP},cpu-num=${CPU_TRCH}")
 
 echo "Final Command (one arg per line):"
 for arg in ${COMMAND[*]}
