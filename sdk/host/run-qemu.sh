@@ -56,17 +56,8 @@ TRCH_NAND_OOB_SIZE=64 # bytes
 TRCH_NAND_ECC_SIZE=12 # bytes
 TRCH_NAND_PAGES_PER_BLOCK=64 # bytes
 
-# Environment settings (paths to build artifacts and tools and the default
-# settings defined above) may be overriden by placing the file at multiple
-# locations (vars in later files override vars in earlier files):
-QEMU_ENV=qemu-env.sh
-SCRIPT_DIR="$(dirname "$0")"
-CONF_DIR="${SCRIPT_DIR}/../../conf"
-CONF_QEMU_ENV=qemu/$QEMU_ENV
-
-# More added later in this script
-ENV_FILES=("${SCRIPT_DIR}/${QEMU_ENV}"
-            "${CONF_DIR}/base/${CONF_QEMU_ENV}")
+# Allow overriding settings (most of which settable via command line)
+ENV_FILES=("${PWD}/qemu-env.sh")
 
 parse_addr() {
     echo $1 | sed 's/_//g'
@@ -153,12 +144,12 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-m mem] [-p prof] [-n netcfg] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-e env] [-m mem] [-n netcfg] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
+    echo "               -e env: load environment settings from file" 1>&2
     echo "               -m memory map: preload files into memory" 1>&2
-    echo "               -p profile: configuration profile to run" 1>&2
     echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
@@ -332,19 +323,21 @@ preload_memory()
 RESET=1
 NET=user
 MONITOR=1
-PROF=default
 
 # parse options
-while getopts "h?S?q?m:p:n:i:" o; do
+while getopts "h?S?q?e:d:m:p:n:i:" o; do
     case "${o}" in
         S)
             RESET=0
             ;;
+        d)
+            QEMU_DT_FILE="$OPTARG"
+            ;;
+        e)
+            ENV_FILES+=("$OPTARG")
+            ;;
         m)
             MEMORY_FILE="$OPTARG"
-            ;;
-        p)
-            PROF="$OPTARG"
             ;;
         i)
             CLI_ID="$OPTARG"
@@ -371,16 +364,6 @@ if [ -z "${CMD}" ]
 then
     CMD="run"
 fi
-
-PROF_DIR=${CONF_DIR}/prof/${PROF}
-if [ ! -d "${PROF_DIR}" ]
-then
-    echo "ERROR: profile ${PROF} not found at: ${PROF_DIR}" 1>&2
-    exit 1
-fi
-ENV_FILES+=("${PROF_DIR}/${CONF_QEMU_ENV}")
-
-ENV_FILES+=("${PWD}/${QEMU_ENV}")
 
 for qemu_env in "${ENV_FILES[@]}"
 do
