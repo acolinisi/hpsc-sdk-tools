@@ -17,12 +17,6 @@ BARE_METAL=hpsc-baremetal
 # be able to build the SSW source tree no matter where it is located.
 # This means we need to support pointing to SDK: either to an installed SDK
 # (installed by the standalone binary installer), OR build in place:
-SDK=../sdk
-#
-# The above implies that SDK needs to install source of the Qemu device tree
-# (which is reasonable); we could also switch to binary overlays but to write
-# the overlay, you need the source of the original, so there's little point.
-QEMU_DT=$(SDK)/qemu-devicetrees
 #
 # Revisit: same as above applies, but furthermore, hpsc-utils needs to
 # be split. It cannot be simply moved into the SDK as is, because it
@@ -33,7 +27,6 @@ QEMU_DT=$(SDK)/qemu-devicetrees
 # could be a parent repo for target software, which would also have submodule
 # references)
 HPSC_UTILS=../hpsc-utils
-TOOLS=$(HPSC_UTILS)/sdk/host
 CONF=$(HPSC_UTILS)/conf
 
 CONF_ZEBU=$(CONF)/zebu/hpps
@@ -324,13 +317,13 @@ $(BLD_PROF)/%.dts $(BLD_PROF)/%.sh:
 	cat $^ > $@
 
 $(BLD_PROF)/%.ini:
-	$(TOOLS)/merge-ini $^ > $@
+	merge-ini $^ > $@
 
 $(BLD_PROF)/%.env:
-	$(TOOLS)/merge-env $^ > $@
+	merge-env $^ > $@
 
 $(BLD_PROF)/%.mem.map:
-	$(TOOLS)/merge-map $^ > $@
+	merge-map $^ > $@
 
 IRF_FR=initramfs.fakeroot
 $(BLD_PROF)/%/hpps/initramfs.cpio: $(wildcard \
@@ -391,7 +384,7 @@ endif
 # The touch is a workaround for .INTERMEDIATE not accepting patterns,
 # otherwise, we would mark the master target intermediate without a real file.
 define zebu-stripe-ddr
-	$(TOOLS)/memstripe --base $(1) -i $< \
+	memstripe --base $(1) -i $< \
 		$(foreach idx,$(2),$(patsubst %.x.ddr.bin,%.$(idx).ddr.bin,$@))
 	touch $@
 endef
@@ -413,7 +406,7 @@ $(foreach idx,$(HPPS_ZEBU_DDR_IMAGE_INDEXES),$(eval $(call zebu-ddr-rule,hpps,$(
 
 # Extract dependencies from a memory map file into a rule file
 %.mem.dep: %.mem.map
-	$(TOOLS)/mkmemimg -l $< > $@
+	mkmemimg -l $< > $@
 
 %.mem.rule: %.mem.dep
 	sed 's#^#$(patsubst %.rule,%.bin,$@): #' $< > $@
@@ -422,10 +415,10 @@ $(foreach idx,$(HPPS_ZEBU_DDR_IMAGE_INDEXES),$(eval $(call zebu-ddr-rule,hpps,$(
 %.dram.mem.bin: TYPE=dram
 
 %.mem.bin: %.mem.map
-	$(TOOLS)/mkmemimg -t $(TYPE) $< $@
+	mkmemimg -t $(TYPE) $< $@
 
 %.vhex: %.bin
-	$(TOOLS)/hpsc-objcopy -I binary -O Verilog-H $< $@
+	hpsc-objcopy -I binary -O Verilog-H $< $@
 
 %.gz: %
 	gzip -c -9 "$<" > "$@"
@@ -456,7 +449,7 @@ endef
 	$(call make-uboot-env,$(HPPS_UBOOT_ENV_SIZE))
 
 %.syscfg.bin: %.syscfg.ini
-	$(TOOLS)/cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
+	cfgc -s ${CONF_BASE}/trch/syscfg-schema.json $< $@
 
 # Prevent deletion of intermediate artifacts
 .SECONDARY:
