@@ -290,26 +290,20 @@ $(patsubst %,$(BLD_PROF)/$(1)/%,$(PROF_COMMON))
 endef
 
 # We cannot append deps to pattern rules, so have to use explicit rules.
-define prof-rules
+define merge-base-rules
 $(BLD_PROF)/$(1)/%: export PROF=$(1)
 prof-$(1): $(call prof-common,$(1))
-
-$(BLD_PROF)/$(1)/qemu/%: | $(BLD_PROF)/$(1)/qemu/
-$(BLD_PROF)/$(1)/trch/%: | $(BLD_PROF)/$(1)/trch/
-$(BLD_PROF)/$(1)/hpps/%: | $(BLD_PROF)/$(1)/hpps/
-$(BLD_PROF)/$(1)/zebu/%: | $(BLD_PROF)/$(1)/zebu/
-
-$(BLD_PROF)/$(1)/qemu/prof.qemu-env.sh: $(CONF_BASE)/qemu/qemu-env.sh
-$(BLD_PROF)/$(1)/qemu/prof.qemu.dts: $(QEMU_DT)/hpsc-arch.dts
-$(BLD_PROF)/$(1)/qemu/prof.preload.mem.map: $(CONF_BASE)/qemu/preload.mem.map
-$(BLD_PROF)/$(1)/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini
-$(BLD_PROF)/$(1)/trch/prof.sram.mem.map: $(CONF_BASE)/trch/sram.mem.map
-$(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env
-$(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.dts: $(HPPS_UBOOT)/arch/arm/dts/hpsc-hpps.dts
-$(BLD_PROF)/$(1)/hpps/prof.hpps-linux.dts: $(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dts
-$(BLD_PROF)/$(1)/zebu/prof.hpps.dram.mem.map: $(CONF_BASE)/zebu/hpps-mem.map
+$(BLD_PROF)/$(1)/qemu/prof.qemu-env.sh: $(CONF_BASE)/qemu/qemu-env.sh | $(BLD_PROF)/$(1)/qemu/
+$(BLD_PROF)/$(1)/qemu/prof.qemu.dts: $(QEMU_DT)/hpsc-arch.dts | $(BLD_PROF)/$(1)/qemu/
+$(BLD_PROF)/$(1)/qemu/prof.preload.mem.map: $(CONF_BASE)/qemu/preload.mem.map | $(BLD_PROF)/$(1)/qemu/
+$(BLD_PROF)/$(1)/trch/prof.syscfg.ini: $(CONF_BASE)/trch/syscfg.ini | $(BLD_PROF)/$(1)/trch/
+$(BLD_PROF)/$(1)/trch/prof.sram.mem.map: $(CONF_BASE)/trch/sram.mem.map | $(BLD_PROF)/$(1)/trch/
+$(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.env: $(CONF_BASE)/hpps/u-boot/uboot.env | $(BLD_PROF)/$(1)/hpps/
+$(BLD_PROF)/$(1)/hpps/prof.hpps-uboot.dts: $(HPPS_UBOOT)/arch/arm/dts/hpsc-hpps.dts | $(BLD_PROF)/$(1)/hpps/
+$(BLD_PROF)/$(1)/hpps/prof.hpps-linux.dts: $(HPPS_LINUX_BOOT)/dts/hpsc/hpsc.dts | $(BLD_PROF)/$(1)/hpps/
+$(BLD_PROF)/$(1)/zebu/prof.hpps.dram.mem.map: $(CONF_BASE)/zebu/hpps-mem.map | $(BLD_PROF)/$(1)/zebu/
 endef
-$(foreach prof,$(PROFILES),$(eval $(call prof-rules,$(prof))))
+$(foreach prof,$(PROFILES),$(eval $(call merge-base-rules,$(prof))))
 
 include $(CONF_PROF)/*/Makefile.prof # definitions of profiles
 
