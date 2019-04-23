@@ -286,6 +286,7 @@ preload_memory()
         fi
 
         # Address field can be: 0x00000000, 0x0000_0000, after(name), -, 4:<any of the above>
+        addr_spec=$(echo "$addr_spec" | sed 's/_//g')
         local cpu="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+\):.*/\1/p')" # may be empty
         addr_spec="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+:\)\?\(.*\)/\2/p')"
         local ref_seg=$(echo $addr_spec | sed -n 's/^after(\([^)]\+\))/\1/p')
@@ -297,7 +298,7 @@ preload_memory()
             then  # do not supply addr
                 local addr=
             else
-                local addr="$(parse_addr $(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f_]\+\)/\1\2/p'))"
+                local addr="$(parse_addr $(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f]\+\)/\1\2/p'))"
             fi
         fi
         SEGMENT_ADDRS["$key"]="$addr"
