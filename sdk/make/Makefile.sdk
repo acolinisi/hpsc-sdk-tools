@@ -8,7 +8,7 @@ FETCH=$(BLD)/fetch
 TC=$(BLD)/tc
 BLD_QEMU=$(BLD)/qemu
 BLD_QEMU_TO_ROOT=$(BLD_TO_ROOT)/..
-HOST=../hpsc-utils/sdk/host
+HOST=hpsc-utils/host
 
 # Host tools needed to build the SDK (not including deps of nested builds)
 WGET=wget
