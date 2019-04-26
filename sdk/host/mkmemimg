@@ -125,6 +125,7 @@ do
         exit 2
     fi
 
+    ADDR_SPEC=$(echo $ADDR_SPEC | sed 's/^[0-9]\+://') # strip CPU number
     REF_SEG=$(echo $ADDR_SPEC | sed -n 's/after(\([^)]\+\))/\1/p')
     if [ ! -z "${REF_SEG}" ]
     then
