@@ -468,6 +468,7 @@ fi
 
 COMMAND=("${GDB_ARGS[@]}" "qemu-system-aarch64"
     -machine "arm-generic-fdt"
+    -m 4G
     -nographic
     -qmp "telnet::$QMP_PORT,server,nowait"
     -gdb "tcp::$GDB_PORT"
