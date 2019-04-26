@@ -116,11 +116,10 @@ deps-sysroot: sysroot toolchains env
 # TRCH=0, RTPS_R52=1, RTPS_A53=2, HPPS=3
 QEMU_GDB_TARGET_CLUSTER=3
 
-QEMU_ARGS=CFLAGS+=-DGDB_TARGET_CLUSTER=$(QEMU_GDB_TARGET_CLUSTER)
-$(BLD_QEMU)/aarch64-softmmu/qemu-system-aarch64: qemu
-
+QEMU_ARGS=
 $(BLD_QEMU)/config.status: | $(BLD_QEMU)/
-	cd $(BLD_QEMU) && $(BLD_QEMU_TO_ROOT)/$(QEMU)/configure \
+	cd $(BLD_QEMU) && CFLAGS+=-DGDB_TARGET_CLUSTER=$(QEMU_GDB_TARGET_CLUSTER) \
+		$(BLD_QEMU_TO_ROOT)/$(QEMU)/configure \
 		--target-list=aarch64-softmmu --enable-fdt \
 		--disable-kvm --disable-xen --enable-debug
 qemu: $(BLD_QEMU)/config.status
