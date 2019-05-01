@@ -151,7 +151,7 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-e env] [-m mem] [-n netcfg] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-e env]* [-m mem] [-n netcfg [-f port]*] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
@@ -161,6 +161,8 @@ function usage()
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
     echo "                   tap: create a host tunnel interface to the target NIC (requires root)" 1>&2
+    echo "               -f port: in 'user' networking config, forward port to host" 1>&2
+    echo "                    (script prints host port assigned to each forwarded port)" 1>&2
     echo "               -S : wait for GDB or QMP connection instead of resetting the machine" 1>&2
     echo "               -q : do not enable the Qemu monitor prompt" 1>&2
     echo "               -h : show this message" 1>&2
@@ -331,9 +333,10 @@ preload_memory()
 RESET=1
 NET=user
 MONITOR=1
+FWD_PORTS=(22 2345) # legacy default
 
 # parse options
-while getopts "h?S?q?e:d:m:p:n:i:" o; do
+while getopts "h?S?q?e:f:d:m:p:n:i:" o; do
     case "${o}" in
         S)
             RESET=0
@@ -343,6 +346,9 @@ while getopts "h?S?q?e:d:m:p:n:i:" o; do
             ;;
         e)
             ENV_FILES+=("$OPTARG")
+            ;;
+        f)
+            FWD_PORTS+=("$OPTARG")
             ;;
         m)
             MEMORY_FILE="$OPTARG"
@@ -406,12 +412,14 @@ HPPS_SRAM_FILE=hpps.sram.bin.${ID}
 : ${SSH_TARGET_PORT:=22}
 : ${DEBUG_TARGET_PORT:=2345}
 
+# These can be increased by modifying the number here without any issue;
+# they only exist in order to keep the ports for each instance together.
 MAX_INSTANCES=8
+MAX_FWD_PORTS=4
 
 : ${QMP_PORT:=$((PORT_BASE + 0 * $MAX_INSTANCES + $ID))}
 : ${GDB_PORT:=$((PORT_BASE + 1 * $MAX_INSTANCES + $ID))}
-: ${SSH_PORT:=$((PORT_BASE + 2 * $MAX_INSTANCES + $ID))}
-: ${DEBUG_PORT:=$((PORT_BASE + 3 * $MAX_INSTANCES + $ID))}
+: ${FWD_PORT_BASE:=$((PORT_BASE + 2 * $MAX_INSTANCES * $MAX_FWD_PORTS + $ID))}
 
 : ${SERIAL_ID:=$ID}
 
@@ -505,9 +513,20 @@ tap)
     COMMAND+=("${NET_NIC[@]}" -net tap,vlan=0,br=$BRIDGE,helper=qemu-bridge-helper)
     ;;
 user)
-    PORT_FWD_ARGS="hostfwd=tcp:$HOST_BIND_IP:$SSH_PORT-$TARGET_IP:$SSH_TARGET_PORT"
-    PORT_FWD_ARGS+=",hostfwd=tcp:$HOST_BIND_IP:$DEBUG_PORT-$TARGET_IP:$DEBUG_TARGET_PORT"
-    COMMAND+=("${NET_NIC[@]}" -net user,vlan=0,$PORT_FWD_ARGS)
+    if [[ "${#FWD_PORTS[@]}" -gt $MAX_FWD_PORTS ]]
+    then
+        echo "ERROR: too many forward ports, increase MAX_FWD_PORTS in $0" 2>&1
+        exit 1
+    fi
+    i=0
+    for port in "${FWD_PORTS[@]}"
+    do
+        FWD_HOST_PORT=$(($FWD_PORT_BASE+$i))
+        PORT_FWD_ARGS+=",hostfwd=tcp:$HOST_BIND_IP:$FWD_HOST_PORT-$TARGET_IP:$port"
+        FWD_PORTS_INFO+="$HOST_BIND_IP:$FWD_HOST_PORT-$TARGET_IP:$port\n"
+        i=$(($i + 1))
+    done
+    COMMAND+=("${NET_NIC[@]}" -net user,vlan=0$PORT_FWD_ARGS)
     ;;
 none)
     ;;
@@ -543,8 +562,8 @@ echo "GDB_PORT = ${GDB_PORT}"
 
 if [ "${NET}" = "user" ]
 then
-    echo "SSH_PORT = ${HOST_BIND_IP}:${SSH_PORT} -> ${TARGET_IP}:${SSH_TARGET_PORT}"
-    echo "DEBUG_PORT = ${HOST_BIND_IP}:${DEBUG_PORT} -> ${TARGET_IP}:${DEBUG_TARGET_PORT}"
+    echo "FORWARDED PORTS:"
+    echo -e "$FWD_PORTS_INFO"
 fi
 echo
 
