@@ -480,7 +480,6 @@ COMMAND=("${GDB_ARGS[@]}" "qemu-system-aarch64"
     -m 4G
     -nographic
     -qmp "telnet::$QMP_PORT,server,nowait"
-    -gdb "tcp::$GDB_PORT"
     -S
     -D "${LOG_FILE}" -d "fdt,guest_errors,unimp,cpu_reset"
     -hw-dtb "${QEMU_DT_FILE}"
@@ -489,6 +488,11 @@ COMMAND=("${GDB_ARGS[@]}" "qemu-system-aarch64"
     -drive "file=$HPPS_SRAM_FILE,if=pflash,format=raw,index=2"
     -drive "file=$TRCH_SRAM_FILE,if=pflash,format=raw,index=0"
     "${QEMU_ARGS[@]}")
+
+if [[ ! -z "${GDB_PORT}" && "${GDB_PORT}" != "none" ]] # ugly due to positive default
+then
+    COMMAND+=(-gdb "tcp::$GDB_PORT")
+fi
 
 NET_NIC=(-net nic,vlan=0,macaddr=$MAC_ADDR)
 case "${NET}" in
