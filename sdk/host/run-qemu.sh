@@ -114,18 +114,21 @@ create_if_absent()
 {
     local dest=$1
     local src=$2
-    local creator=$3
-    shift 3
-    if [ -f "$src" ] # if a source is given, override current image
+    local overwrite=$3
+    local creator=$4
+    shift 4
+    if [[ ! -f "$dest" || "$overwrite" -eq 1 ]]
     then
-        run cp $src $dest
-    else
-        if [ ! -f "$dest" ]
+        if [ -f "$src" ]
         then
-            $creator "$dest" "$@"
+            echo "Ovewriting memory image..."
+            run cp $src $dest
         else
-            echo "Using existing image: $dest"
+            echo "Creating memory image..."
+            $creator "$dest" "$@"
         fi
+    else
+        echo "Using existing memory image: $dest"
     fi
 }
 
@@ -133,12 +136,16 @@ create_images()
 {
     set -e
 
-    create_if_absent "${TRCH_SRAM_FILE}" "${TRCH_SMC_SRAM}" create_sram_image ${LSIO_SRAM_SIZE}
-    create_if_absent "${TRCH_NAND_FILE}" "${TRCH_SMC_NAND}" create_nand_image \
-        $TRCH_NAND_SIZE $TRCH_NAND_PAGE_SIZE $TRCH_NAND_PAGES_PER_BLOCK $TRCH_NAND_OOB_SIZE $TRCH_NAND_ECC_SIZE
-    create_if_absent "${HPPS_SRAM_FILE}" "${HPPS_SMC_SRAM}" create_sram_image ${HPPS_SRAM_SIZE}
-    create_if_absent "${HPPS_NAND_FILE}" "${HPPS_SMC_NAND}" create_nand_image \
-        $HPPS_NAND_SIZE $HPPS_NAND_PAGE_SIZE $HPPS_NAND_PAGES_PER_BLOCK $HPPS_NAND_OOB_SIZE $HPPS_NAND_ECC_SIZE
+    create_if_absent "${TRCH_SRAM_FILE}" "${TRCH_SMC_SRAM}" "${TRCH_SMC_SRAM_OVERWRITE}" \
+        create_sram_image ${LSIO_SRAM_SIZE}
+    create_if_absent "${TRCH_NAND_FILE}" "${TRCH_SMC_NAND}" "${TRCH_SMC_NAND_OVERWRITE}" \
+        create_nand_image $TRCH_NAND_SIZE $TRCH_NAND_PAGE_SIZE $TRCH_NAND_PAGES_PER_BLOCK \
+                $TRCH_NAND_OOB_SIZE $TRCH_NAND_ECC_SIZE
+    create_if_absent "${HPPS_SRAM_FILE}" "${HPPS_SMC_SRAM}" "${HPPS_SMC_SRAM_OVERWRITE}" \
+        create_sram_image ${HPPS_SRAM_SIZE}
+    create_if_absent "${HPPS_NAND_FILE}" "${HPPS_SMC_NAND}" "${HPPS_SMC_NAND_OVERWRITE}" \
+        create_nand_image $HPPS_NAND_SIZE $HPPS_NAND_PAGE_SIZE $HPPS_NAND_PAGES_PER_BLOCK \
+                $HPPS_NAND_OOB_SIZE $HPPS_NAND_ECC_SIZE
     set +e
 }
 
