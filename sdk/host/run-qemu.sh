@@ -412,8 +412,10 @@ GDB_PORT=$((PORT_BASE + 1 * $MAX_INSTANCES + $ID))
 SSH_PORT=$((PORT_BASE + 2 * $MAX_INSTANCES + $ID))
 DEBUG_PORT=$((PORT_BASE + 3 * $MAX_INSTANCES + $ID))
 
+: ${SERIAL_ID:=$ID}
+
 # Labels are created by Qemu with the convention "serialN"
-SCREEN_SESSIONS=(hpsc-$ID-trch hpsc-$ID-rtps-r52 hpsc-$ID-hpps)
+SCREEN_SESSIONS=(hpsc-$SERIAL_ID-trch hpsc-$SERIAL_ID-rtps-r52 hpsc-$SERIAL_ID-hpps)
 SERIAL_PORTS=(serial0 serial1 serial2)
 SERIAL_PORT_ARGS=()
 for _ in "${SERIAL_PORTS[@]}"
