@@ -386,10 +386,10 @@ else
 fi
 
 
-TRCH_SRAM_FILE=trch_sram.bin.${ID}
-TRCH_NAND_FILE=trch_nand.bin.${ID}
-HPPS_NAND_FILE=hpps_nand.bin.${ID}
-HPPS_SRAM_FILE=hpps_sram.bin.${ID}
+TRCH_SRAM_FILE=trch.sram.bin.${ID}
+TRCH_NAND_FILE=trch.nand.bin.${ID}
+HPPS_NAND_FILE=hpps.nand.bin.${ID}
+HPPS_SRAM_FILE=hpps.sram.bin.${ID}
 
 MAC_ADDR=00:0a:35:00:02:$ID
 # This target IP is for 'user' networking mode, where the address is private,
