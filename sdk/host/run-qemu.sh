@@ -398,19 +398,20 @@ TRCH_NAND_FILE=trch.nand.bin.${ID}
 HPPS_NAND_FILE=hpps.nand.bin.${ID}
 HPPS_SRAM_FILE=hpps.sram.bin.${ID}
 
-MAC_ADDR=00:0a:35:00:02:$ID
+: ${MAC_ADDR:=00:0a:35:00:02:$ID}
 # This target IP is for 'user' networking mode, where the address is private,
 # all instances can use the same address.
-TARGET_IP=10.0.2.15
+: ${TARGET_IP:=10.0.2.15}
 
-SSH_TARGET_PORT=22
-DEBUG_TARGET_PORT=2345
+: ${SSH_TARGET_PORT:=22}
+: ${DEBUG_TARGET_PORT:=2345}
 
 MAX_INSTANCES=8
-QMP_PORT=$((PORT_BASE + 0 * $MAX_INSTANCES + $ID))
-GDB_PORT=$((PORT_BASE + 1 * $MAX_INSTANCES + $ID))
-SSH_PORT=$((PORT_BASE + 2 * $MAX_INSTANCES + $ID))
-DEBUG_PORT=$((PORT_BASE + 3 * $MAX_INSTANCES + $ID))
+
+: ${QMP_PORT:=$((PORT_BASE + 0 * $MAX_INSTANCES + $ID))}
+: ${GDB_PORT:=$((PORT_BASE + 1 * $MAX_INSTANCES + $ID))}
+: ${SSH_PORT:=$((PORT_BASE + 2 * $MAX_INSTANCES + $ID))}
+: ${DEBUG_PORT:=$((PORT_BASE + 3 * $MAX_INSTANCES + $ID))}
 
 : ${SERIAL_ID:=$ID}
 
