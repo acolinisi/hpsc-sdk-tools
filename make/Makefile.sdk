@@ -14,8 +14,8 @@ SDK_TOOLS=hpsc-sdk-tools/bin
 WGET=wget
 TAR=tar
 
-all: toolchains env qemu qemu-dt
-clean: toolchains-clean env-env qemu-clean qemu-dt-clean
+all: tools toolchains env qemu qemu-dt
+clean: tools-clean toolchains-clean env-env qemu-clean qemu-dt-clean
 
 # Prerequisites added to this rule dynamically
 fetch:
@@ -111,6 +111,12 @@ deps-sysroot: sysroot toolchains env
 	@echo 'source $(abspath $(SYSROOT)/bld/env.sh)' >> $(ENV_FILE)
 
 # Components of the SDK that are built from source
+
+tools:
+	$(MAKE) -C $(SDK_TOOLS)
+tools-clean:
+	$(MAKE) -C $(SDK_TOOLS) clean
+.PHONY: tools tools-clean
 
 # Build Qemu s.t. its GDB stub points to the given target CPU cluster:
 # TRCH=0, RTPS_R52=1, RTPS_A53=2, HPPS=3
