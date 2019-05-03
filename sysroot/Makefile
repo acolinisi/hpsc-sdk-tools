@@ -82,6 +82,7 @@ DEPS_LIB=\
 	pixman \
 	ncurses \
 	openssl \
+	curl \
 
 # Tools
 #
@@ -128,6 +129,7 @@ VER_pixman=0.38.0
 VER_dtc=1.5.0
 VER_ncurses=6.1
 VER_openssl=1.1.1b
+VER_curl=7.64.1
 VER_screen=4.6.2
 VER_git=2.21.0
 
@@ -166,6 +168,7 @@ URL_pixman=https://www.cairographics.org/releases
 URL_dtc=https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot
 URL_ncurses=https://invisible-mirror.net/archives/ncurses
 URL_openssl=https://www.openssl.org/source
+URL_curl=https://curl.haxx.se/download
 URL_screen=https://ftp.gnu.org/gnu/screen
 URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
 
@@ -184,6 +187,7 @@ ART_glib=$(PC)/glib-2.0.pc
 ART_pixman=$(PC)/pixman-1.pc
 ART_ncurses=$(PC)/ncurses.pc
 ART_openssl=$(PC64)/openssl.pc
+ART_curl=$(PC)/libcurl.pc
 
 ART_fakeroot=$(BIN)/fakeroot
 ART_dtc=$(BIN)/dtc
@@ -273,7 +277,8 @@ SYSROOT_VARS=\
 	PKG_CONFIG_PATH=$(HPREFIX)/lib64/pkgconfig:$(HPREFIX)/lib/pkgconfig \
 	LD_LIBRARY_PATH=$(HPREFIX)/lib64:$(HPREFIX)/lib \
 	CFLAGS+=-I$(HPREFIX)/include \
-	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib" \
+	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib -Wl,-rpath=$(HPREFIX)/lib64:$(HPREFIX)/lib" \
+	PATH="$(HPREFIX)/bin:$$PATH" \
 
 $(ART_attr):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
@@ -328,8 +333,12 @@ $(ART_screen): $(ART_ncurses)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_git):
+$(ART_curl):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR) install
+
+$(ART_git): $(ART_curl)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
 	$(MAKE) -C $(DIR) install
 
 # Bootstrapping does not appear to be necessary
