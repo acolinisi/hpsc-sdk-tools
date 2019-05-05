@@ -398,6 +398,7 @@ do
     source_if_exists ${qemu_env}
 done
 
+mkdir -p "${RUN_DIR}"
 TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin.${ID}
 TRCH_NAND_FILE=${RUN_DIR}/trch.nand.bin.${ID}
 HPPS_NAND_FILE=${RUN_DIR}/hpps.nand.bin.${ID}
