@@ -151,7 +151,7 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-f port]*] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-p port]*] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
@@ -162,7 +162,7 @@ function usage()
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
     echo "                   tap: create a host tunnel interface to the target NIC (requires root)" 1>&2
-    echo "               -f port: in 'user' networking config, forward port to host" 1>&2
+    echo "               -p port: in 'user' networking config, forward port to host" 1>&2
     echo "                    (script prints host port assigned to each forwarded port)" 1>&2
     echo "               -S : wait for GDB or QMP connection instead of resetting the machine" 1>&2
     echo "               -q : do not enable the Qemu monitor prompt" 1>&2
@@ -337,7 +337,7 @@ MONITOR=1
 FWD_PORTS=()
 
 # parse options
-while getopts "h?S?q?e:f:d:m:p:n:i:" o; do
+while getopts "h?S?q?e:d:m:p:n:i:" o; do
     case "${o}" in
         S)
             RESET=0
@@ -348,7 +348,7 @@ while getopts "h?S?q?e:f:d:m:p:n:i:" o; do
         e)
             ENV_FILES+=("$OPTARG")
             ;;
-        f)
+        p)
             FWD_PORTS+=("$OPTARG")
             ;;
         m)
