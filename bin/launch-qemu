@@ -16,8 +16,13 @@ function finish {
     then
         rm "$GDB_CMD_FILE"
     fi
-    local JOBS="$(jobs -p)"
-    [[ -z "$JOBS" ]] || kill $JOBS
+    if [ ! -z "$CONSOLES_PID" ]
+    then
+        if ps -p $CONSOLES_PID >/dev/null 2>&1
+        then
+            kill $CONSOLES_PID
+        fi
+    fi
 }
 trap finish EXIT
 
@@ -264,6 +269,7 @@ setup_console()
         setup_screen $session
     done
     attach_consoles &
+    CONSOLES_PID=$!
 }
 
 preload_memory()
