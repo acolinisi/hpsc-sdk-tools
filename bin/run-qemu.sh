@@ -332,9 +332,9 @@ preload_memory()
 
 # defaults
 RESET=1
-NET=user
+NET=none
 MONITOR=1
-FWD_PORTS=(22 2345) # legacy default
+FWD_PORTS=()
 
 # parse options
 while getopts "h?S?q?e:f:d:m:p:n:i:" o; do
