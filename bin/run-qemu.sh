@@ -151,10 +151,11 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-e env]* [-m mem] [-n netcfg [-f port]*] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-f port]*] [-i id] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
+    echo "               -d dt_file: Qemu device tree file that defines the machine" 1>&2
     echo "               -e env: load environment settings from file" 1>&2
     echo "               -m memory map: preload files into memory" 1>&2
     echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
