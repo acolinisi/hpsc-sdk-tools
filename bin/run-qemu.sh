@@ -334,6 +334,7 @@ preload_memory()
 }
 
 # defaults
+ID=0
 RESET=1
 NET=none
 MONITOR=1
@@ -384,25 +385,18 @@ then
     CMD="run"
 fi
 
+# Privatize generated files, ports, screen sessions for this Qemu instance
+# Note: apply CLI ID before sourcing env files so that env files can use it
+if [ ! -z "${CLI_ID}" ] # let CLI override
+then
+    ID=${CLI_ID}
+fi
+
 for qemu_env in "${ENV_FILES[@]}"
 do
    echo QEMU ENV ${qemu_env}
     source_if_exists ${qemu_env}
 done
-
-# Privatize generated files, ports, screen sessions for this Qemu instance
-
-# Complexity only because env files were already sourced before CLI processing
-if [ ! -z "${CLI_ID}" ] # let CLI override
-then
-    ID=${CLI_ID}
-else
-    if [ -z "${ID}" ] # let env files already sourced above define it
-    then
-        ID=0
-    fi
-fi
-
 
 TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin.${ID}
 TRCH_NAND_FILE=${RUN_DIR}/trch.nand.bin.${ID}
