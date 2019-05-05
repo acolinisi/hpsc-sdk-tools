@@ -286,7 +286,7 @@ preload_memory()
         line=$(echo $line | sed 's/\(.*\)\s*#.*/\1/')
 
         local key=$(extract_word 0 $line)
-        local addr_spec=$(extract_word 1 $line)
+        local addr_spec=$(eval echo $(extract_word 1 $line)) # expand vars
         local in_file=$(eval echo $(extract_word 2 $line)) # expand vars
 
         if [[ -z "$key" || -z "$addr_spec" || -z "$in_file" ]]
