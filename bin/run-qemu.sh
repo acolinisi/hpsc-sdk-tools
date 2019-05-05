@@ -335,6 +335,7 @@ RESET=1
 NET=none
 MONITOR=1
 FWD_PORTS=()
+MEMORY_FILES=()
 
 # parse options
 while getopts "h?S?q?e:d:m:p:n:i:" o; do
@@ -352,7 +353,7 @@ while getopts "h?S?q?e:d:m:p:n:i:" o; do
             FWD_PORTS+=("$OPTARG")
             ;;
         m)
-            MEMORY_FILE="$OPTARG"
+            MEMORY_FILES+=("$OPTARG")
             ;;
         i)
             CLI_ID="$OPTARG"
@@ -542,9 +543,12 @@ then
     COMMAND+=(-monitor stdio)
 fi
 
-if [ ! -z "${MEMORY_FILE}" ]
+if [ ${#MEMORY_FILES[@]} -gt 0 ]
 then
-    preload_memory "${MEMORY_FILE}"
+    for f in "${MEMORY_FILES[@]}"
+    do
+        preload_memory "$f"
+    done
 fi
 
 echo "Final Command (one arg per line):"
