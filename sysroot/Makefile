@@ -41,19 +41,18 @@ PC64=$(PREFIX)/lib64/pkgconfig
 WGET=wget
 TAR=tar
 UNZIP=unzip
-PYTHON=python2
-# ... built while building the SDK
-FAKEROOT=$(HPREFIX)/bin/fakeroot # installed as a dep here
+# ... built while building the SDK (must be absolute paths, not via $(BIN))
+FAKEROOT=$(HPREFIX)/bin/fakeroot
+PYTHON=$(HPREFIX)/bin/python3
 
-PYTHON_VER=$(shell $(PYTHON) -V 2>&1 | cut -d' ' -f2 | cut -d'.' -f1-2)
-PYTHON_SITE_REL=$(PREFIX)/lib/python$(PYTHON_VER)/site-packages
+PYTHON_SITE_REL=$(PREFIX)/lib/python$(VER_python)/site-packages
 PYTHON_SITE=$(abspath $(PYTHON_SITE_REL))
 
 define ENV=
 # Auto-generated SDK environment file
 HPREFIX=$(abspath $(SYSROOT))/usr
 export PATH=$$HPREFIX/sbin:$$HPREFIX/bin:$$PATH
-export PYTHONPATH=$$HPREFIX/lib/python$(PYTHON_VER)/site-packages:$$PYTHONPATH
+export PYTHONPATH=$$HPREFIX/lib/python$(VER_python)/site-packages:$$PYTHONPATH
 export LD_LIBRARY_PATH=$$HPREFIX/lib64:$$HPREFIX/lib
 export PKG_CONFIG_PATH=$$HPREFIX/lib64/pkgconfig:$$HPREFIX/lib/pkgconfig
 endef
@@ -96,6 +95,7 @@ DEPS_TOOL=\
 	dtc \
 	screen \
 	git \
+	python \
 
 # Python packages
 #
@@ -132,6 +132,7 @@ VER_openssl=1.1.1b
 VER_curl=7.64.1
 VER_screen=4.6.2
 VER_git=2.21.0
+VER_python=3.7.3
 
 # Python packages
 VER_setuptools=40.8.0
@@ -148,6 +149,7 @@ TARBALL_pcre=pcre-$(VER_pcre).tar.bz2
 TARBALL_glib=glib-$(VER_glib).tar.xz
 TARBALL_git=git-$(VER_git).tar.xz
 TARBALL_setuptools=setuptools-$(VER_setuptools).zip
+TARBALL_python=Python-$(VER_python).tar.xz
 
 # Filename in URL: default to TARBALL name, and override exceptions
 $(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
@@ -156,6 +158,7 @@ $(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
 # Name of directory in tarball: default to "name-ver", and override exceptions
 $(foreach d,$(DEPS),$(eval DIR_$(d)=$(d)-$(VER_$(d))))
 DIR_util_linux=util-linux-$(VER_util_linux)
+DIR_python=Python-$(VER_python)
 
 URL_attr=http://download.savannah.nongnu.org/releases/attr
 URL_libcap2=http://ftp.debian.org/debian/pool/main/libc/libcap2
@@ -171,6 +174,7 @@ URL_openssl=https://www.openssl.org/source
 URL_curl=https://curl.haxx.se/download
 URL_screen=https://ftp.gnu.org/gnu/screen
 URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
+URL_python=https://www.python.org/ftp/python/$(VER_python)
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -193,10 +197,11 @@ ART_fakeroot=$(BIN)/fakeroot
 ART_dtc=$(BIN)/dtc
 ART_screen=$(BIN)/screen
 ART_git=$(BIN)/git
+ART_python=$(BIN)/python3
 
 # For python packages artifacts are standard, but any exceptions can override
 $(foreach p,$(DEPS_PY),\
-	$(eval ART_$(p)=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(PYTHON_VER).egg-info))
+	$(eval ART_$(p)=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(VER_python).egg-info))
 
 libs: $(DEPS_LIB)
 tools: $(DEPS_TOOL)
@@ -341,13 +346,17 @@ $(ART_git): $(ART_curl)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
 	$(MAKE) -C $(DIR) install
 
+$(ART_python):
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR) install
+
 # Bootstrapping does not appear to be necessary
 #setuptools-bootstrap:
 #	cd $(WORK)/$(DIR_setuptools) && $(PYTHON) bootstrap.py
 #$(ART_setuptools): setuptools-bootstrap
 
 define py-rule
-$(ART_$(1)):
+$(ART_$(1)): $(ART_python)
 	cd $$(DIR) && PYTHONPATH=$(PYTHON_SITE):$(PYTHONPATH) \
 		$(PYTHON) setup.py install --root=$(abspath $(SYSROOT))
 endef
