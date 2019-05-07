@@ -79,6 +79,7 @@ DEPS_LIB=\
 	libffi \
 	glib \
 	pixman \
+	sqlite \
 	ncurses \
 	openssl \
 	curl \
@@ -126,6 +127,8 @@ VER_MAJMIN_glib=2.54
 VER_PATCH_glib=3
 VER_glib=$(VER_MAJMIN_glib).$(VER_PATCH_glib)
 VER_pixman=0.38.0
+VER_sqlite=3.28.0
+VER_sqlite_NUM=3280000
 VER_dtc=1.5.0
 VER_ncurses=6.1
 VER_openssl=1.1.1b
@@ -147,6 +150,7 @@ TARBALL_fakeroot=fakeroot_$(VER_fakeroot).orig.tar.xz
 TARBALL_util_linux=util-linux-$(VER_util_linux).tar.xz
 TARBALL_pcre=pcre-$(VER_pcre).tar.bz2
 TARBALL_glib=glib-$(VER_glib).tar.xz
+TARBALL_sqlite=sqlite-autoconf-$(VER_sqlite_NUM).tar.gz
 TARBALL_git=git-$(VER_git).tar.xz
 TARBALL_setuptools=setuptools-$(VER_setuptools).zip
 TARBALL_python=Python-$(VER_python).tar.xz
@@ -158,6 +162,7 @@ $(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
 # Name of directory in tarball: default to "name-ver", and override exceptions
 $(foreach d,$(DEPS),$(eval DIR_$(d)=$(d)-$(VER_$(d))))
 DIR_util_linux=util-linux-$(VER_util_linux)
+DIR_sqlite=sqlite-autoconf-$(VER_sqlite_NUM)
 DIR_python=Python-$(VER_python)
 
 URL_attr=http://download.savannah.nongnu.org/releases/attr
@@ -168,6 +173,7 @@ URL_pcre=https://ftp.pcre.org/pub/pcre
 URL_libffi=ftp://sourceware.org/pub/libffi
 URL_glib=http://ftp.gnome.org/pub/gnome/sources/glib/$(VER_MAJMIN_glib)
 URL_pixman=https://www.cairographics.org/releases
+URL_sqlite=https://www.sqlite.org/2019
 URL_dtc=https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot
 URL_ncurses=https://invisible-mirror.net/archives/ncurses
 URL_openssl=https://www.openssl.org/source
@@ -189,6 +195,7 @@ ART_pcre=$(PC)/libpcre.pc
 ART_libffi=$(PC)/libffi.pc
 ART_glib=$(PC)/glib-2.0.pc
 ART_pixman=$(PC)/pixman-1.pc
+ART_sqlite=$(PC)/sqlite3.pc
 ART_ncurses=$(PC)/ncurses.pc
 ART_openssl=$(PC64)/openssl.pc
 ART_curl=$(PC)/libcurl.pc
@@ -320,6 +327,10 @@ $(ART_pixman):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	make -C $(DIR) install
 
+$(ART_sqlite):
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	make -C $(DIR) install
+
 $(ART_ncurses):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 		--with-pkg-config-libdir=$(HPREFIX)/lib/pkgconfig \
@@ -346,8 +357,9 @@ $(ART_git): $(ART_curl)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
 	$(MAKE) -C $(DIR) install
 
-$(ART_python):
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+$(ART_python): $(ART_sqlite)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
+		--enable-loadable-sqlite-extensions
 	$(MAKE) -C $(DIR) install
 
 # Bootstrapping does not appear to be necessary
