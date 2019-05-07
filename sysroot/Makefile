@@ -97,6 +97,7 @@ DEPS_TOOL=\
 	screen \
 	git \
 	python \
+	texinfo \
 
 # Python packages
 #
@@ -136,6 +137,7 @@ VER_curl=7.64.1
 VER_screen=4.6.2
 VER_git=2.21.0
 VER_python=3.7.3
+VER_texinfo=6.6
 
 # Python packages
 VER_setuptools=40.8.0
@@ -181,6 +183,7 @@ URL_curl=https://curl.haxx.se/download
 URL_screen=https://ftp.gnu.org/gnu/screen
 URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
 URL_python=https://www.python.org/ftp/python/$(VER_python)
+URL_texinfo=https://ftp.gnu.org/gnu/texinfo
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -205,6 +208,7 @@ ART_dtc=$(BIN)/dtc
 ART_screen=$(BIN)/screen
 ART_git=$(BIN)/git
 ART_python=$(BIN)/python3
+ART_texinfo=$(BIN)/makeinfo
 
 # For python packages artifacts are standard, but any exceptions can override
 $(foreach p,$(DEPS_PY),\
@@ -360,6 +364,10 @@ $(ART_git): $(ART_curl)
 $(ART_python): $(ART_sqlite)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 		--enable-loadable-sqlite-extensions
+	$(MAKE) -C $(DIR) install
+
+$(ART_texinfo):
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 # Bootstrapping does not appear to be necessary
