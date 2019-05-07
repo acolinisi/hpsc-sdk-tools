@@ -277,7 +277,7 @@ SYSROOT_VARS=\
 	PKG_CONFIG_PATH=$(HPREFIX)/lib64/pkgconfig:$(HPREFIX)/lib/pkgconfig \
 	LD_LIBRARY_PATH=$(HPREFIX)/lib64:$(HPREFIX)/lib \
 	CFLAGS+=-I$(HPREFIX)/include \
-	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib -Wl,-rpath=$(HPREFIX)/lib64:$(HPREFIX)/lib" \
+	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib -Wl,-rpath=$(HPREFIX)/lib64 -Wl,-rpath=$(HPREFIX)/lib" \
 	PATH="$(HPREFIX)/bin:$$PATH" \
 
 $(ART_attr):
