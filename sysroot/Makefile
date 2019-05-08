@@ -98,6 +98,7 @@ DEPS_TOOL=\
 	git \
 	python \
 	texinfo \
+	uboottools \
 
 # Python packages
 #
@@ -138,6 +139,7 @@ VER_screen=4.6.2
 VER_git=2.21.0
 VER_python=3.7.3
 VER_texinfo=6.6
+VER_uboottools=2019.01
 
 # Python packages
 VER_setuptools=40.8.0
@@ -156,6 +158,7 @@ TARBALL_sqlite=sqlite-autoconf-$(VER_sqlite_NUM).tar.gz
 TARBALL_git=git-$(VER_git).tar.xz
 TARBALL_setuptools=setuptools-$(VER_setuptools).zip
 TARBALL_python=Python-$(VER_python).tar.xz
+TARBALL_uboottools=u-boot-$(VER_uboottools).tar.bz2
 
 # Filename in URL: default to TARBALL name, and override exceptions
 $(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
@@ -166,6 +169,7 @@ $(foreach d,$(DEPS),$(eval DIR_$(d)=$(d)-$(VER_$(d))))
 DIR_util_linux=util-linux-$(VER_util_linux)
 DIR_sqlite=sqlite-autoconf-$(VER_sqlite_NUM)
 DIR_python=Python-$(VER_python)
+DIR_uboottools=u-boot-$(VER_uboottools)
 
 URL_attr=http://download.savannah.nongnu.org/releases/attr
 URL_libcap2=http://ftp.debian.org/debian/pool/main/libc/libcap2
@@ -184,6 +188,7 @@ URL_screen=https://ftp.gnu.org/gnu/screen
 URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
 URL_python=https://www.python.org/ftp/python/$(VER_python)
 URL_texinfo=https://ftp.gnu.org/gnu/texinfo
+URL_uboottools=ftp://ftp.denx.de/pub/u-boot
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -209,6 +214,7 @@ ART_screen=$(BIN)/screen
 ART_git=$(BIN)/git
 ART_python=$(BIN)/python3
 ART_texinfo=$(BIN)/makeinfo
+ART_uboottools=$(BIN)/mkimage
 
 # For python packages artifacts are standard, but any exceptions can override
 $(foreach p,$(DEPS_PY),\
@@ -368,6 +374,14 @@ $(ART_python): $(ART_sqlite)
 $(ART_texinfo):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
+
+UBOOTTOOLS_VARS=HOST_EXTRACFLAGS="-I$(HPREFIX)/include"
+$(ART_uboottools):
+	cd $(DIR) && $(SYSROOT_VARS) $(UBOOTTOOLS_VARS) $(MAKE) defconfig
+	cd $(DIR) && $(SYSROOT_VARS) $(UBOOTTOOLS_VARS) $(MAKE) tools envtools
+	cd $(DIR) && install -m 755 -t "$(HPREFIX)/bin" \
+		tools/{mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}
+	cd $(DIR) && ln -sf fw_printenv $(HPREFIX)/bin/fw_setenv
 
 # Bootstrapping does not appear to be necessary
 #setuptools-bootstrap:
