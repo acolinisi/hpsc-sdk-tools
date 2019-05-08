@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import argparse
@@ -79,26 +79,26 @@ def compile(cfg, schema):
                 cfg_bin[f.word] |= f.build(v)
             except FieldValueError as exc:
                 raise ConfigValueError("field %s.%s value '%s' invalid: %s" % \
-                                       (s, k, v, exc.args[0]))
+                                       (s, k, v, *exc.args)) from exc
     return bytearray_from_wordarray(cfg_bin)
 
 try:
     schema = json.loads(strip_comments(open(args.schema, "r").read()))
 except Exception as exc:
-    print("Error in ", args.schema, ":", exc.args[0])
+    print("Error in ", args.schema, ":", *exc.args)
     sys.exit(1)
 
 try:
     cfg = configparser.ConfigParser()
     cfg.read(args.ini_file)
 except Exception as exc:
-    print("Error in ", args.ini_file, ":", exc.args[0])
+    print("Error in ", args.ini_file, ":", *exc.args)
     sys.exit(1)
 
 try:
     binary = compile(cfg, schema)
 except ConfigError as exc:
-    print("Error in ", args.ini_file, ": does not comply to schema:", exc.args[0])
+    print("Error in ", args.ini_file, ": does not comply to schema:", *exc.args)
     sys.exit(1)
 
 fout = open(args.bin_file, "wb")
