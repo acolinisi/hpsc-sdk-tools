@@ -62,9 +62,9 @@ env: $(ENV_FILE)
 $(ENV_FILE): export ENV_SH=$(ENV)
 $(ENV_FILE):
 	echo "$$ENV_SH" > $@
-clean-env:
+env-clean:
 	rm -f $(ENV_FILE)
-.PHONY: env clean-env
+.PHONY: env env-clean
 
 # Note: the identifiers need to be unique across this whole file, including
 # across separate categories, but the tarballs and build directories may have
@@ -224,23 +224,22 @@ fetch: $(foreach d,$(DEPS),$(FETCH)/$(TARBALL_$(d)))
 	mkdir -p $@
 
 # don't clean fetched tarballs unless explicitly requested
-clean: clean-sysroot clean-env clean-bld
-clean-%: clean-bld-%
-.PHONY: clean clean-%
+clean: sysroot-clean env-clean bld-clean
+.PHONY: clean
 
-clean-sysroot:
+sysroot-clean:
 	rm -rf $(SYSROOT)/
-.PHONY: clean-sysroot
+.PHONY: sysroot-clean
 
-clean-bld:
+bld-clean:
 	rm -rf $(WORK)/
-clean-bld-%:
+bld-%-clean:
 	rm -f $(WORK)/$(DIR_$*)
-clean-fetch:
+fetch-clean:
 	rm -rf $(FETCH)/
-clean-fetch-%:
+fetch-%-clean:
 	rm -f $(FETCH)/$(TARBALL_$*)
-.PHONY: clean-bld clean-bld-% clean-fetch clean-fetch-%
+.PHONY: bld-clean bld-%-clean fetch-clean fetch-%-clean
 
 define fetch-rule
 $(2)/$(TARBALL_$(1)): | $(2)/
@@ -261,7 +260,7 @@ $(3)/$(DIR_$(1)): $(2)/$(TARBALL_$(1)) | $(3)/
 endef
 
 define clean-rule
-clean-$(1):
+$(1)-clean:
 	rm -rf $(2)/$(DIR_$(1)) $(ART_$(1))
 endef
 
