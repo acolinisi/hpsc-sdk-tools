@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import sys
 import argparse
@@ -14,7 +14,7 @@ def write_fields(f, *fields):
     TAB_WIDTH = 8 # spaces
     FIELD_WIDTH = 4 # tabs
     for e in fields:
-        tabs = FIELD_WIDTH - len(e) / TAB_WIDTH
+        tabs = FIELD_WIDTH - len(e) // TAB_WIDTH
         tabs = tabs if tabs >= 0 else 0
         padding = "\t" * tabs
         f.write(e + padding)
