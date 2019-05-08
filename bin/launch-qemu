@@ -49,6 +49,11 @@ TRCH_SMC_NAND=
 HPPS_SMC_SRAM=
 HPPS_SMC_NAND=
 
+# This maximum is respected by Qemu, regardless of what memory is defined in
+# Qemu device tree (e.g. generic-loader will fail to load a file that exceeds
+# this maximum, even if DT defines larger memory).
+MAX_VM_MEM=4G
+
 # Size of off-chip memory connected to SMC SRAM ports,
 # this size is used if/when this script creates the images.
 LSIO_SRAM_SIZE=0x04000000           #  64MB
@@ -494,7 +499,7 @@ fi
 
 COMMAND=("${GDB_ARGS[@]}" "qemu-system-aarch64"
     -machine "arm-generic-fdt"
-    -m 4G
+    -m ${MAX_VM_MEM}
     -nographic
     -qmp "telnet::$QMP_PORT,server,nowait"
     -S
