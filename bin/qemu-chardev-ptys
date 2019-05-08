@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import sys
 import argparse
@@ -27,4 +27,5 @@ for label in args.args:
         if not fname.startswith("pty:"):
             raise Exception("Chardev backend is not a PTY: %s" % fname)
         fname = fname.replace(u"pty:", u"")
-        print(fname),
+        print(fname + ' ', end='')
+print()

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import sys
 import telnetlib as tn
@@ -22,10 +22,10 @@ args = parser.parse_args()
 
 cl = tn.Telnet(args.host, args.port)
 
-reply = cl.read_until("\r\n")
+reply = cl.read_until(b"\r\n")
 
-cl.write('{"execute": "qmp_capabilities"}')
-reply = cl.read_until("\r\n")
+cl.write(b'{"execute": "qmp_capabilities"}')
+reply = cl.read_until(b"\r\n")
 
 arg_str = ""
 for arg in args.args:
@@ -47,10 +47,11 @@ req = """
     }
 }
 """ % (args.cmd, arg_str)
+req = req.encode()
 
 if not args.quiet:
-    print req
+    print(req)
 cl.write(req)
-reply = cl.read_until("\r\n")
+reply = cl.read_until(b"\r\n")
 
-print reply
+print(reply.decode())
