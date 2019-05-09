@@ -156,14 +156,13 @@ create_images()
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-p port]*] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-p port]*] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
     echo "               -d dt_file: Qemu device tree file that defines the machine" 1>&2
     echo "               -e env: load environment settings from file" 1>&2
     echo "               -m memory map: preload files into memory" 1>&2
-    echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
     echo "                   tap: create a host tunnel interface to the target NIC (requires root)" 1>&2
@@ -339,7 +338,6 @@ preload_memory()
 }
 
 # defaults
-ID=0
 RESET=1
 NET=none
 MONITOR=1
@@ -347,7 +345,7 @@ FWD_PORTS=()
 MEMORY_FILES=()
 
 # parse options
-while getopts "h?S?q?e:d:m:p:n:i:" o; do
+while getopts "h?S?q?e:d:m:p:n:" o; do
     case "${o}" in
         S)
             RESET=0
@@ -363,9 +361,6 @@ while getopts "h?S?q?e:d:m:p:n:i:" o; do
             ;;
         m)
             MEMORY_FILES+=("$OPTARG")
-            ;;
-        i)
-            CLI_ID="$OPTARG"
             ;;
         n)
             NET="$OPTARG"
@@ -390,18 +385,14 @@ then
     CMD="run"
 fi
 
-# Privatize generated files, ports, screen sessions for this Qemu instance
-# Note: apply CLI ID before sourcing env files so that env files can use it
-if [ ! -z "${CLI_ID}" ] # let CLI override
-then
-    ID=${CLI_ID}
-fi
-
 for qemu_env in "${ENV_FILES[@]}"
 do
    echo QEMU ENV ${qemu_env}
     source_if_exists ${qemu_env}
 done
+
+# Privatize generated files, ports, screen sessions for this Qemu instance
+: ${ID:=0}
 
 # Memory images created by this script will go here
 : ${RUN_DIR:=.}
