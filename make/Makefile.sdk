@@ -16,7 +16,7 @@ WGET=wget
 TAR=tar
 
 all: tools toolchains env qemu qemu-dt
-clean: tools-clean toolchains-clean env-env qemu-clean qemu-dt-clean
+clean: tools-clean toolchains-clean env-clean qemu-clean qemu-dt-clean
 
 # Prerequisites added to this rule dynamically
 fetch:
