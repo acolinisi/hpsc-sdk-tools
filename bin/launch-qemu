@@ -391,17 +391,17 @@ do
     source_if_exists ${qemu_env}
 done
 
-# Privatize generated files, ports, screen sessions for this Qemu instance
+# Privatize ports and screen sessions for this Qemu instance
 : ${ID:=0}
 
 # Memory images created by this script will go here
 : ${RUN_DIR:=.}
 
 mkdir -p "${RUN_DIR}"
-TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin.${ID}
-TRCH_NAND_FILE=${RUN_DIR}/trch.nand.bin.${ID}
-HPPS_NAND_FILE=${RUN_DIR}/hpps.nand.bin.${ID}
-HPPS_SRAM_FILE=${RUN_DIR}/hpps.sram.bin.${ID}
+TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin
+TRCH_NAND_FILE=${RUN_DIR}/trch.nand.bin
+HPPS_NAND_FILE=${RUN_DIR}/hpps.nand.bin
+HPPS_SRAM_FILE=${RUN_DIR}/hpps.sram.bin
 
 : ${MAC_ADDR:=00:0a:35:00:02:$ID}
 # This target IP is for 'user' networking mode, where the address is private,
