@@ -4,6 +4,7 @@ QEMU_DT=qemu-devicetrees
 BLD=bld
 BLD_TO_ROOT=..
 FETCH=$(BLD)/fetch
+FETCH_CACHE?=$(FETCH)
 TC=$(BLD)/tc
 BLD_QEMU=$(BLD)/qemu
 BLD_QEMU_TO_ROOT=$(BLD_TO_ROOT)/..
@@ -71,9 +72,17 @@ DIR_arm_gnu_a=gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu
 
 define fetch-rule
 fetch: $(FETCH)/$(TARBALL_$(1))
-$(FETCH)/$(TARBALL_$(1)): | $(FETCH)/
-	$(WGET) -O $$@ $(URL_$(1))/$$(@F)
+$(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/
+	$(WGET) --no-verbose -O $$@ $(URL_$(1))/$$(@F)
+.INTERMEDIATE: $(FETCH_CACHE)/$(TARBALL_$(1))
+.SECONDARY: $(FETCH_CACHE)/$(TARBALL_$(1))
 endef
+
+# We make a copy, so that we're self-sufficient in case FETCH_CACHE goes away
+ifneq ($(FETCH),$(FETCH_CACHE))
+$(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/
+	cp $< $@
+endif
 
 # touch the directory, since the timestamp of the dir in tar may be stored and
 # it will be older than the tarball, which would cause the target to be remade.
@@ -107,7 +116,7 @@ deps-sysroot: tools-sysroot toolchains env
 
 tools: tools-all
 tools-%:
-	$(MAKE) -C $(SDK_TOOLS) $*
+	$(MAKE) -C $(SDK_TOOLS) FETCH_CACHE=$(abspath $(FETCH_CACHE)) $*
 .PHONY: tools-%
 
 # Build Qemu s.t. its GDB stub points to the given target CPU cluster:

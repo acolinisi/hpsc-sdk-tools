@@ -27,6 +27,7 @@ BLD=bld
 SYSROOT=$(BLD)/sysroot
 
 FETCH=$(BLD)/fetch
+FETCH_CACHE?=$(FETCH)
 WORK=$(BLD)/work
 
 PREFIX=$(SYSROOT)/usr
@@ -251,9 +252,19 @@ fetch-%-clean:
 .PHONY: bld-clean bld-%-clean fetch-clean fetch-%-clean
 
 define fetch-rule
-$(2)/$(TARBALL_$(1)): | $(2)/
-	$(WGET) -O $$@ $(URL_$(1))/$(FNAME_$(1))
+fetch: $(FETCH)/$(TARBALL_$(1))
+$(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/
+	$(WGET) --no-verbose -O $$@ $(URL_$(1))/$(FNAME_$(1))
+.INTERMEDIATE: $(FETCH_CACHE)/$(TARBALL_$(1))
+.SECONDARY: $(FETCH_CACHE)/$(TARBALL_$(1))
 endef
+
+# We make a copy, so that we're self-sufficient in case FETCH_CACHE goes away
+ifneq ($(FETCH),$(FETCH_CACHE))
+$(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/
+	cp $< $@
+endif
+.SECONDARY: $(FETCH)/
 
 # touch the directory, since the timestamp of the dir in tar may be stored and
 # it will be older than the tarball, which would cause the target to be remade.
@@ -270,12 +281,12 @@ endef
 
 define clean-rule
 $(1)-clean:
-	rm -rf $(2)/$(DIR_$(1)) $(ART_$(1))
+	rm -rf $(WORK)/$(DIR_$(1)) $(ART_$(1))
 endef
 
 $(foreach d,$(DEPS),\
-	$(eval $(call fetch-rule,$(d),$(FETCH)))\
-	$(eval $(call clean-rule,$(d),$(WORK))))
+	$(eval $(call fetch-rule,$(d)))\
+	$(eval $(call clean-rule,$(d))))
 
 DEPS_TAR=$(foreach d,$(DEPS),\
 	$(if $(filter %.tar.gz %.tar.xz %.tar.bz2 %.tar,$(TARBALL_$(d))),$(d),))
