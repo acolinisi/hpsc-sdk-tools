@@ -381,8 +381,10 @@ $(ART_git): $(ART_curl)
 	$(MAKE) -C $(DIR) install
 
 $(ART_python): $(ART_sqlite)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
-		--enable-loadable-sqlite-extensions
+	cd $(DIR) && $(SYSROOT_VARS) \
+		CFLAGS+="$(pkg-config --cflags ncurses)" CPPFLAGS+=$$CFLAGS" \
+		LDFLAGS+="$(pkg-config --libs ncurses)" \
+		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions
 	$(MAKE) -C $(DIR) install
 
 $(ART_texinfo):
