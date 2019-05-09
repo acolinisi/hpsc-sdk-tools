@@ -35,12 +35,6 @@ function source_if_exists()
     fi
 }
 
-# Source files from which to init mem images (none by default)
-TRCH_SMC_SRAM=
-TRCH_SMC_NAND=
-HPPS_SMC_SRAM=
-HPPS_SMC_NAND=
-
 # Allow overriding settings (most of which settable via command line)
 ENV_FILES=("${PWD}/qemu-env.sh")
 
@@ -106,7 +100,7 @@ create_if_absent()
     then
         if [ -f "$src" ]
         then
-            echo "Ovewriting memory image..."
+            echo "Overwriting memory image..."
             run cp "$src" "$dest"
         else
             echo "Creating memory image..."
@@ -376,6 +370,7 @@ done
 
 # Memory images created by this script will go here
 : "${RUN_DIR:=.}"
+mkdir -p "${RUN_DIR}"
 
 : "${LOG_FILE:=/tmp/qemu-$(whoami).log}"
 : "${BRIDGE:=br0}"
@@ -396,7 +391,12 @@ done
 : "${TRCH_NAND_ECC_SIZE:=12}" # bytes
 : "${TRCH_NAND_PAGES_PER_BLOCK:=64}" # bytes
 
-mkdir -p "${RUN_DIR}"
+# Source files from which to init mem images (none by default)
+: "{TRCH_SMC_SRAM:=}"
+: "{TRCH_SMC_NAND:=}"
+: "{HPPS_SMC_SRAM:=}"
+: "{HPPS_SMC_NAND:=}"
+
 : "${TRCH_SRAM_FILE:=${RUN_DIR}/trch.sram.bin}"
 : "${TRCH_NAND_FILE:=${RUN_DIR}/trch.nand.bin}"
 : "${HPPS_NAND_FILE:=${RUN_DIR}/hpps.nand.bin}"
