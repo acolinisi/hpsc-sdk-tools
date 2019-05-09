@@ -265,7 +265,7 @@ endef
 
 define extract-rule-zip
 $(3)/$(DIR_$(1)): $(2)/$(TARBALL_$(1)) | $(3)/
-	cd $(3) && $(UNZIP) -q $(abspath $$<)
+	cd $(3) && $(UNZIP) -o -q $(abspath $$<)
 endef
 
 define clean-rule
