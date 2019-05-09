@@ -380,10 +380,10 @@ $(ART_git): $(ART_curl)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
 	$(MAKE) -C $(DIR) install
 
-$(ART_python): $(ART_sqlite)
+$(ART_python): $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 	cd $(DIR) && $(SYSROOT_VARS) \
-		CFLAGS+="$(shell pkg-config --cflags ncurses)" CPPFLAGS+="$$CFLAGS" \
-		LDFLAGS+="$(shell pkg-config --libs ncurses)" \
+		CFLAGS+="$(shell pkg-config --cflags ncurses libffi)" CPPFLAGS+="$$CFLAGS" \
+		LDFLAGS+="$(shell pkg-config --libs ncurses libffi)" \
 		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions
 	$(MAKE) -C $(DIR) install
 
