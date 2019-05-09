@@ -14,8 +14,8 @@ tun=$1
 
 if [ -n "$tun" ]
 then
-    ip link set $tun up
-    ip link set $tun master $switch
+    ip link set "$tun" up
+    ip link set "$tun" master $switch
 else
     echo "Error: no interface specified"
     exit 1
