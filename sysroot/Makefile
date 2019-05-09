@@ -384,7 +384,7 @@ $(ART_python): $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 	cd $(DIR) && $(SYSROOT_VARS) \
 		CFLAGS+="$(shell pkg-config --cflags ncurses libffi)" CPPFLAGS+="$$CFLAGS" \
 		LDFLAGS+="$(shell pkg-config --libs ncurses libffi)" \
-		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions
+		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions --enable-optimizations
 	$(MAKE) -C $(DIR) install
 
 $(ART_texinfo):
