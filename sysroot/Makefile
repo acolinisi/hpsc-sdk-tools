@@ -382,8 +382,8 @@ $(ART_git): $(ART_curl)
 
 $(ART_python): $(ART_sqlite)
 	cd $(DIR) && $(SYSROOT_VARS) \
-		CFLAGS+="$(pkg-config --cflags ncurses)" CPPFLAGS+=$$CFLAGS" \
-		LDFLAGS+="$(pkg-config --libs ncurses)" \
+		CFLAGS+="$(shell pkg-config --cflags ncurses)" CPPFLAGS+="$$CFLAGS" \
+		LDFLAGS+="$(shell pkg-config --libs ncurses)" \
 		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions
 	$(MAKE) -C $(DIR) install
 
