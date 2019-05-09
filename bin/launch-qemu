@@ -35,9 +35,6 @@ function source_if_exists()
     fi
 }
 
-# Memory images created by this script will go here
-: ${RUN_DIR:=.}
-
 PORT_BASE=$((1024 + $(id -u) + 1000)) # arbitrary, but unique and not system
 LOG_FILE=/tmp/qemu-$(whoami).log
 BRIDGE=br0
@@ -405,6 +402,9 @@ do
    echo QEMU ENV ${qemu_env}
     source_if_exists ${qemu_env}
 done
+
+# Memory images created by this script will go here
+: ${RUN_DIR:=.}
 
 mkdir -p "${RUN_DIR}"
 TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin.${ID}
