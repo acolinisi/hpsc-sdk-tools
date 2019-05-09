@@ -307,9 +307,11 @@ $(foreach d,$(DEPS),$(eval $(d): $(ART_$(d))))
 # Define per-target DIR to allow recipies to be more concise
 $(foreach d,$(DEPS),$(eval $(ART_$(d)): DIR=$(WORK)/$(DIR_$(d))))
 
+PKGCFG_PATHS=$(HPREFIX)/lib64/pkgconfig:$(HPREFIX)/lib/pkgconfig
+
 # Env vars usually respected by autoconf configure script
 SYSROOT_VARS=\
-	PKG_CONFIG_PATH=$(HPREFIX)/lib64/pkgconfig:$(HPREFIX)/lib/pkgconfig \
+	PKG_CONFIG_PATH=$(PKGCFG_PATHS) \
 	LD_LIBRARY_PATH=$(HPREFIX)/lib64:$(HPREFIX)/lib \
 	CFLAGS+=-I$(HPREFIX)/include \
 	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib -Wl,-rpath=$(HPREFIX)/lib64 -Wl,-rpath=$(HPREFIX)/lib" \
@@ -380,10 +382,12 @@ $(ART_git): $(ART_curl)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
 	$(MAKE) -C $(DIR) install
 
+PY_PKGCFG_DEPS=ncurses libffi
 $(ART_python): $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 	cd $(DIR) && $(SYSROOT_VARS) \
-		CFLAGS+="$(shell pkg-config --cflags ncurses libffi)" CPPFLAGS+="$$CFLAGS" \
-		LDFLAGS+="$(shell pkg-config --libs ncurses libffi)" \
+		CFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) pkg-config --cflags $(PY_PKGCFG_DEPS))" \
+		CPPFLAGS+="$$CFLAGS" \
+		LDFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) pkg-config --libs $(PY_PKGCFG_DEPS))" \
 		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions --enable-optimizations
 	$(MAKE) -C $(DIR) install
 
