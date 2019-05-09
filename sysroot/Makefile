@@ -45,14 +45,14 @@ UNZIP=unzip
 FAKEROOT=$(HPREFIX)/bin/fakeroot
 PYTHON=$(HPREFIX)/bin/python3
 
-PYTHON_SITE_REL=$(PREFIX)/lib/python$(VER_python)/site-packages
+PYTHON_SITE_REL=$(PREFIX)/lib/python$(VER_MAJMIN_python)/site-packages
 PYTHON_SITE=$(abspath $(PYTHON_SITE_REL))
 
 define ENV=
 # Auto-generated SDK environment file
 HPREFIX=$(abspath $(SYSROOT))/usr
 export PATH=$$HPREFIX/sbin:$$HPREFIX/bin:$$PATH
-export PYTHONPATH=$$HPREFIX/lib/python$(VER_python)/site-packages:$$PYTHONPATH
+export PYTHONPATH=$(PYTHON_SITE):$$PYTHONPATH
 export LD_LIBRARY_PATH=$$HPREFIX/lib64:$$HPREFIX/lib
 export PKG_CONFIG_PATH=$$HPREFIX/lib64/pkgconfig:$$HPREFIX/lib/pkgconfig
 endef
@@ -137,7 +137,9 @@ VER_openssl=1.1.1b
 VER_curl=7.64.1
 VER_screen=4.6.2
 VER_git=2.21.0
-VER_python=3.7.3
+VER_MAJMIN_python=3.7
+VER_PATCH_python=3
+VER_python=$(VER_MAJMIN_python).$(VER_PATCH_python)
 VER_texinfo=6.6
 VER_uboottools=2019.01
 
@@ -218,11 +220,12 @@ ART_uboottools=$(BIN)/mkimage
 
 # For python packages artifacts are standard, but any exceptions can override
 $(foreach p,$(DEPS_PY),\
-	$(eval ART_$(p)=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(VER_python).egg-info))
+	$(eval ART_$(p)=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(VER_MAJMIN_python).egg))
 
 libs: $(DEPS_LIB)
 tools: $(DEPS_TOOL)
 py: $(DEPS_PY)
+py-clean: $(foreach d,$(DEPS_PY),$(d)-clean)
 
 fetch: $(foreach d,$(DEPS),$(FETCH)/$(TARBALL_$(d)))
 
@@ -391,7 +394,7 @@ $(ART_uboottools):
 define py-rule
 $(ART_$(1)): $(ART_python)
 	cd $$(DIR) && PYTHONPATH=$(PYTHON_SITE):$(PYTHONPATH) \
-		$(PYTHON) setup.py install --root=$(abspath $(SYSROOT))
+		$(PYTHON) setup.py install --prefix=$(HPREFIX)
 endef
 
 $(foreach d,$(DEPS_PY),$(eval $(call py-rule,$(d))))
