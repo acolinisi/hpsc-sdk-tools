@@ -18,9 +18,9 @@ function finish {
     fi
     if [ ! -z "$CONSOLES_PID" ]
     then
-        if ps -p $CONSOLES_PID >/dev/null 2>&1
+        if ps -p "$CONSOLES_PID" >/dev/null 2>&1
         then
-            kill $CONSOLES_PID
+            kill "$CONSOLES_PID"
         fi
     fi
 }
@@ -30,7 +30,7 @@ function source_if_exists()
 {
     if [ -f "$1" ]
     then
-        echo Loading env from: $1
+        echo "Loading env from: $1"
         source "$1"
     fi
 }
@@ -65,10 +65,10 @@ TRCH_NAND_PAGES_PER_BLOCK=64 # bytes
 ENV_FILES=("${PWD}/qemu-env.sh")
 
 parse_addr() {
-    echo $1 | sed 's/_//g'
+    echo "$1" | sed 's/_//g'
 }
 hex() {
-    printf "0x%x" $1
+    printf "0x%x" "$1"
 }
 extract_word() {
     IDX=$1
@@ -76,12 +76,12 @@ extract_word() {
     local i=0
     for w in "$@"
     do
-        if [ $i -eq $IDX ]
+        if [ $i -eq "$IDX" ]
         then
-            echo $w
+            echo "$w"
             return
         fi
-        i=$(($i + 1))
+        i=$((i + 1))
     done
 }
 
@@ -111,8 +111,8 @@ create_nand_image()
     local pages_per_block=$4
     local oob_size=$5
     local ecc_size=$6
-    local blocks="$(nand_blocks $size $page_size $pages_per_block)"
-    run qemu-nand-creator $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
+    local blocks="$(nand_blocks "$size" "$page_size" "$pages_per_block")"
+    run qemu-nand-creator "$page_size" "$oob_size" "$pages_per_block" "$blocks" "$ecc_size" 1 "$file"
 }
 
 create_if_absent()
@@ -127,7 +127,7 @@ create_if_absent()
         if [ -f "$src" ]
         then
             echo "Ovewriting memory image..."
-            run cp $src $dest
+            run cp "$src" "$dest"
         else
             echo "Creating memory image..."
             $creator "$dest" "$@"
@@ -201,8 +201,8 @@ function setup_screen()
 
 function serial_ptys()
 {
-    qmp.py -q localhost $QMP_PORT query-chardev | \
-        qemu-chardev-ptys ${SERIAL_PORTS[*]}
+    qmp.py -q localhost "$QMP_PORT" query-chardev | \
+        qemu-chardev-ptys "${SERIAL_PORTS[@]}"
 }
 
 function attach_consoles()
@@ -252,7 +252,7 @@ function attach_consoles()
     if [ "$RESET" -eq 1 ]
     then
         echo "Sending 'continue' command to Qemu to reset the machine..."
-        qmp.py localhost $QMP_PORT cont
+        qmp.py localhost "$QMP_PORT" cont
     else
         echo "Waiting for 'continue' (aka. reset) command via GDB or QMP connection..."
     fi
@@ -262,7 +262,7 @@ setup_console()
 {
     for session in "${SCREEN_SESSIONS[@]}"
     do
-        setup_screen $session
+        setup_screen "$session"
     done
     attach_consoles &
     CONSOLES_PID=$!
@@ -273,7 +273,7 @@ preload_memory()
     set -e
     local map_file=$1
     echo "Preloading memory according to map file: $map_file"
-    if [ ! -r ${map_file} ] # 'while...done < file' not fatal even with set -e
+    if [ ! -r "${map_file}" ] # 'while...done < file' not fatal even with set -e
     then
         echo "ERROR: can't read preload memory map file: $map_file" 1>&2
         return 1
@@ -288,11 +288,12 @@ preload_memory()
         then
             continue
         fi
-        line=$(echo $line | sed 's/\(.*\)\s*#.*/\1/')
+        line=$(echo "$line" | sed 's/\(.*\)\s*#.*/\1/')
+        local WORDS=($line)
 
-        local key=$(extract_word 0 $line)
-        local addr_spec=$(extract_word 1 $line)
-        local in_file=$(eval echo $(extract_word 2 $line)) # expand vars
+        local key=$(extract_word 0 "${WORDS[@]}")
+        local addr_spec=$(extract_word 1 "${WORDS[@]}")
+        local in_file=$(eval echo "$(extract_word 2 "${WORDS[@]}")") # expand vars
 
         if [[ -z "$key" || -z "$addr_spec" || -z "$in_file" ]]
         then
@@ -302,20 +303,20 @@ preload_memory()
 
         # Address field can be: 0x00000000, 0x0000_0000, after(name), -, 4:<any of the above>
         addr_spec=$(echo "$addr_spec" | sed 's/(/\[/g' | sed 's/)/\]/g') # ()->[] for eval
-        addr_spec=$(eval echo $addr_spec)
+        addr_spec=$(eval echo "$addr_spec")
         addr_spec=$(echo "$addr_spec" | sed 's/_//g')
         local cpu="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+\):.*/\1/p')" # may be empty
         addr_spec="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+:\)\?\(.*\)/\2/p')"
-        local ref_seg=$(echo $addr_spec | sed -n 's/^after\[\([^)]\+\)\]/\1/p')
+        local ref_seg=$(echo "$addr_spec" | sed -n 's/^after\[\([^)]\+\)\]/\1/p')
         if [ ! -z "$ref_seg" ]
         then
-            local addr=$(hex $((${SEGMENT_ADDRS[$ref_seg]} + $(stat -c '%s' ${SEGMENT_FILES[$ref_seg]}))))
+            local addr=$(hex $((${SEGMENT_ADDRS[$ref_seg]} + $(stat -c '%s' "${SEGMENT_FILES[$ref_seg]}"))))
         else
             if [[ "$addr_spec" =~ - ]]
             then  # do not supply addr
                 local addr=
             else
-                local addr="$(parse_addr $(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f]\+\)/\1\2/p'))"
+                local addr=$(parse_addr "$(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f]\+\)/\1\2/p')")
             fi
         fi
         SEGMENT_ADDRS["$key"]="$addr"
@@ -332,8 +333,8 @@ preload_memory()
         fi
         COMMAND+=(-device "$loader_arg")
 
-        line_num=$(($line_num + 1))
-    done < $map_file
+        line_num=$((line_num + 1))
+    done < "$map_file"
     set +e
 }
 
@@ -392,10 +393,10 @@ do
 done
 
 # Privatize ports and screen sessions for this Qemu instance
-: ${ID:=0}
+: "${ID:=0}"
 
 # Memory images created by this script will go here
-: ${RUN_DIR:=.}
+: "${RUN_DIR:=.}"
 
 mkdir -p "${RUN_DIR}"
 TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin
@@ -403,24 +404,24 @@ TRCH_NAND_FILE=${RUN_DIR}/trch.nand.bin
 HPPS_NAND_FILE=${RUN_DIR}/hpps.nand.bin
 HPPS_SRAM_FILE=${RUN_DIR}/hpps.sram.bin
 
-: ${MAC_ADDR:=00:0a:35:00:02:$ID}
+: "${MAC_ADDR:=00:0a:35:00:02:$ID}"
 # This target IP is for 'user' networking mode, where the address is private,
 # all instances can use the same address.
-: ${TARGET_IP:=10.0.2.15}
+: "${TARGET_IP:=10.0.2.15}"
 
-: ${SSH_TARGET_PORT:=22}
-: ${DEBUG_TARGET_PORT:=2345}
+: "${SSH_TARGET_PORT:=22}"
+: "${DEBUG_TARGET_PORT:=2345}"
 
 # These can be increased by modifying the number here without any issue;
 # they only exist in order to keep the ports for each instance together.
 MAX_INSTANCES=8
 MAX_FWD_PORTS=4
 
-: ${QMP_PORT:=$((PORT_BASE + 0 * $MAX_INSTANCES + $ID))}
-: ${GDB_PORT:=$((PORT_BASE + 1 * $MAX_INSTANCES + $ID))}
-: ${FWD_PORT_BASE:=$((PORT_BASE + 2 * $MAX_INSTANCES * $MAX_FWD_PORTS + $ID))}
+: "${QMP_PORT:=$((PORT_BASE + 0 * MAX_INSTANCES + ID))}"
+: "${GDB_PORT:=$((PORT_BASE + 1 * MAX_INSTANCES + ID))}"
+: "${FWD_PORT_BASE:=$((PORT_BASE + 2 * MAX_INSTANCES * MAX_FWD_PORTS + ID))}"
 
-: ${SERIAL_ID:=$ID}
+: "${SERIAL_ID:=$ID}"
 
 # Labels are created by Qemu with the convention "serialN"
 SCREEN_SESSIONS=(hpsc-$SERIAL_ID-trch hpsc-$SERIAL_ID-rtps-r52 hpsc-$SERIAL_ID-hpps)
@@ -502,14 +503,14 @@ then
     COMMAND+=(-gdb "tcp::$GDB_PORT")
 fi
 
-NET_NIC=(-net nic,vlan=0,macaddr=$MAC_ADDR)
+NET_NIC=(-net "nic,vlan=0,macaddr=$MAC_ADDR")
 case "${NET}" in
 tap)
     # See HPSC Qemu User Guide for setup. In short, do this once, as root:
     #     ip link add $BRIDGE type bridge
     #     echo "allow $BRIDGE" >> /usr/local/etc/qemu/bridge.conf
     #     install -o root -g root -m 4775 /usr/local/bin/qemu-bridge-helper $QEMU_BRIDGE_PREFIX
-    COMMAND+=("${NET_NIC[@]}" -net tap,vlan=0,br=$BRIDGE,helper=qemu-bridge-helper)
+    COMMAND+=("${NET_NIC[@]}" -net "tap,vlan=0,br=$BRIDGE,helper=qemu-bridge-helper")
     ;;
 user)
     if [[ "${#FWD_PORTS[@]}" -gt $MAX_FWD_PORTS ]]
@@ -520,12 +521,12 @@ user)
     i=0
     for port in "${FWD_PORTS[@]}"
     do
-        FWD_HOST_PORT=$(($FWD_PORT_BASE+$i))
+        FWD_HOST_PORT=$((FWD_PORT_BASE+i))
         PORT_FWD_ARGS+=",hostfwd=tcp:$HOST_BIND_IP:$FWD_HOST_PORT-$TARGET_IP:$port"
         FWD_PORTS_INFO+="$HOST_BIND_IP:$FWD_HOST_PORT-$TARGET_IP:$port\n"
-        i=$(($i + 1))
+        i=$((i + 1))
     done
-    COMMAND+=("${NET_NIC[@]}" -net user,vlan=0$PORT_FWD_ARGS)
+    COMMAND+=("${NET_NIC[@]}" -net "user,vlan=0$PORT_FWD_ARGS")
     ;;
 none)
     ;;
