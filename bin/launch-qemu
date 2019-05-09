@@ -51,7 +51,7 @@ hex() {
     printf "0x%x" "$1"
 }
 extract_word() {
-    IDX=$1
+    local IDX=$1
     shift
     local i=0
     for w in "$@"
@@ -120,7 +120,6 @@ create_if_absent()
 create_images()
 {
     set -e
-
     create_if_absent "${TRCH_SRAM_FILE}" "${TRCH_SMC_SRAM}" "${TRCH_SMC_SRAM_OVERWRITE}" \
         create_sram_image "${LSIO_SRAM_SIZE}"
     create_if_absent "${TRCH_NAND_FILE}" "${TRCH_SMC_NAND}" "${TRCH_SMC_NAND_OVERWRITE}" \
@@ -368,8 +367,8 @@ fi
 
 for qemu_env in "${ENV_FILES[@]}"
 do
-   echo QEMU ENV ${qemu_env}
-    source_if_exists ${qemu_env}
+    echo "QEMU ENV ${qemu_env}"
+    source_if_exists "${qemu_env}"
 done
 
 # Privatize ports and screen sessions for this Qemu instance
@@ -424,7 +423,7 @@ MAX_FWD_PORTS=4
 : "${SERIAL_ID:=$ID}"
 
 # Labels are created by Qemu with the convention "serialN"
-SCREEN_SESSIONS=(hpsc-$SERIAL_ID-trch hpsc-$SERIAL_ID-rtps-r52 hpsc-$SERIAL_ID-hpps)
+SCREEN_SESSIONS=("hpsc-$SERIAL_ID-trch" "hpsc-$SERIAL_ID-rtps-r52" "hpsc-$SERIAL_ID-hpps")
 SERIAL_PORTS=(serial0 serial1 serial2)
 SERIAL_PORT_ARGS=()
 for _ in "${SERIAL_PORTS[@]}"
@@ -550,9 +549,9 @@ then
 fi
 
 echo "Final Command (one arg per line):"
-for arg in ${COMMAND[*]}
+for arg in "${COMMAND[@]}"
 do
-    echo $arg
+    echo "$arg"
 done
 echo
 
