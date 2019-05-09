@@ -49,7 +49,7 @@ elif args.input: # unstriped -> striped
 
 LINE_SZ = 32
 
-lines = sz / LINE_SZ;
+lines = sz // LINE_SZ;
 
 BASE_ADDR = args.base
 FROM = 6
