@@ -67,27 +67,33 @@ URL_arm_gnu_a=https://releases.linaro.org/components/toolchain/binaries/latest-7
 TARBALL_arm_gnu_a=gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
 DIR_arm_gnu_a=gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu
 
-%/ :
+# Ideally, this would be "%/:" but make <=3.81 eats trailing slashes
+%/. :
 	mkdir -p $@
 
 define fetch-rule
 fetch: $(FETCH)/$(TARBALL_$(1))
-$(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/
+$(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/.
 	$(WGET) --no-verbose -O $$@ $(URL_$(1))/$$(@F)
 .INTERMEDIATE: $(FETCH_CACHE)/$(TARBALL_$(1))
 .SECONDARY: $(FETCH_CACHE)/$(TARBALL_$(1))
 endef
 
 # We make a copy, so that we're self-sufficient in case FETCH_CACHE goes away
-ifneq ($(FETCH),$(FETCH_CACHE))
-$(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/
+ifneq ($(patsubst %.,%,$(FETCH)),$(FETCH_CACHE)) # strip . from /. (see mkdir rule)
+# This mkdir rule is so that $(FETCH)/% doesn't match $(FETCH)/. and create
+# a circular dependency. This is only needed with the /. workaround (see mkdir rule)
+$(FETCH)/.:
+	mkdir -p $@
+$(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/.
 	cp $< $@
 endif
+.SECONDARY: $(FETCH)/.
 
 # touch the directory, since the timestamp of the dir in tar may be stored and
 # it will be older than the tarball, which would cause the target to be remade.
 define extract-rule
-$(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(TC)/
+$(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(TC)/.
 	$(TAR) -C $(2) -x -f $$<
 	touch $$@
 $(1) : | $(2)/$(DIR_$(1))
@@ -124,7 +130,7 @@ tools-%:
 QEMU_GDB_TARGET_CLUSTER=3
 
 QEMU_ARGS=
-$(BLD_QEMU)/config.status: | $(BLD_QEMU)/
+$(BLD_QEMU)/config.status: | $(BLD_QEMU)/.
 	cd $(BLD_QEMU) && CFLAGS+=-DGDB_TARGET_CLUSTER=$(QEMU_GDB_TARGET_CLUSTER) \
 		$(BLD_QEMU_TO_ROOT)/$(QEMU)/configure \
 		--target-list=aarch64-softmmu --enable-fdt \
