@@ -52,7 +52,7 @@ PKGCONFIG=$(HPREFIX)/bin/pkg-config
 PYTHON_SITE_REL=$(PREFIX)/lib/python$(VER_MAJMIN_python)/site-packages
 PYTHON_SITE=$(abspath $(PYTHON_SITE_REL))
 
-define ENV=
+define ENV
 # Auto-generated SDK environment file
 HPREFIX=$(abspath $(SYSROOT))/usr
 export PATH=$$HPREFIX/sbin:$$HPREFIX/bin:$$PATH
