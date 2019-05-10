@@ -215,7 +215,7 @@ $(foreach p,$(DEPS_PY),\
 	$(eval URL_$(p)=https://pypi.io/packages/source/$(shell echo $(p) | head -c 1)/$(p)))
 
 # Artifacts in order to be able to define a dep tree (required for each dep)
-ART_attr=$(PC)/libattr.pc
+ART_attr=$(BIN)/attr # for >=2.4.48 use $(PC)/libattr.pc
 ART_libcap=$(PC64)/libcap.pc
 ART_util_linux=$(PC)/mount.pc
 ART_pcre=$(PC)/libpcre.pc
