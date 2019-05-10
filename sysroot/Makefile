@@ -100,6 +100,7 @@ DEPS_TOOL=\
 	python \
 	texinfo \
 	uboottools \
+	make \
 
 # Python packages
 #
@@ -143,6 +144,7 @@ VER_PATCH_python=3
 VER_python=$(VER_MAJMIN_python).$(VER_PATCH_python)
 VER_texinfo=6.6
 VER_uboottools=2019.01
+VER_make=4.2
 
 # Python packages
 VER_setuptools=40.8.0
@@ -192,6 +194,7 @@ URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
 URL_python=https://www.python.org/ftp/python/$(VER_python)
 URL_texinfo=https://ftp.gnu.org/gnu/texinfo
 URL_uboottools=ftp://ftp.denx.de/pub/u-boot
+URL_make=https://ftp.gnu.org/gnu/make
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -218,6 +221,7 @@ ART_git=$(BIN)/git
 ART_python=$(BIN)/python3
 ART_texinfo=$(BIN)/makeinfo
 ART_uboottools=$(BIN)/mkimage
+ART_make=$(BIN)/make
 
 # For python packages artifacts are standard, but any exceptions can override
 $(foreach p,$(DEPS_PY),\
@@ -402,6 +406,10 @@ $(ART_uboottools):
 	cd $(DIR) && install -m 755 -t "$(HPREFIX)/bin" \
 		tools/{mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}
 	cd $(DIR) && ln -sf fw_printenv $(HPREFIX)/bin/fw_setenv
+
+$(ART_make):
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR) install
 
 # Bootstrapping does not appear to be necessary
 #setuptools-bootstrap:
