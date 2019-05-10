@@ -1,0 +1,25 @@
+--- a/Makefile	2019-05-10 12:21:47.117737000 -0700
++++ b/Makefile	2019-05-10 12:22:20.918066000 -0700
+@@ -263,7 +263,9 @@
+ # Some Linux distributions (including RHEL7, SLES13, Debian 8) still
+ # have older compilers as their default, so we make it explicit for
+ # these that our host tools are GNU11 (i.e. C11 w/ GNU extensions).
+-CSTD_FLAG := -std=gnu11
++#
++# PATCHED: revert to gnu99 to support GCC >=4.4
++CSTD_FLAG := -std=gnu99
+ ifeq ($(HOSTOS),linux)
+ HOSTCFLAGS += $(CSTD_FLAG)
+ endif
+--- a/include/compiler.h	2019-05-10 12:21:52.155734000 -0700
++++ b/include/compiler.h	2019-05-10 12:22:28.857736000 -0700
+@@ -120,9 +120,6 @@
+ 
+ #else /* !USE_HOSTCC */
+ 
+-/* Type for `void *' pointers. */
+-typedef unsigned long int uintptr_t;
+-
+ #include <linux/string.h>
+ #include <linux/types.h>
+ #include <asm/byteorder.h>

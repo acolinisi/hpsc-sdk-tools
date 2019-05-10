@@ -150,6 +150,7 @@ VER_MAJMIN_python=3.7
 VER_PATCH_python=3
 VER_python=$(VER_MAJMIN_python).$(VER_PATCH_python)
 VER_texinfo=6.6
+# u-boot >=2018.05 requires GCC >= 6 (but 2018.05 breaks, so we patch 2019.01)
 VER_uboottools=2019.01
 VER_make=4.2
 VER_pkgconfig=0.29.2
@@ -420,6 +421,7 @@ $(ART_texinfo): | $(ART_pkgconfig)
 
 UBOOTTOOLS_VARS=HOST_EXTRACFLAGS="-I$(HPREFIX)/include"
 $(ART_uboottools): | $(ART_pkgconfig)
+	$(PATCH) -d $(DIR) -p1 < $(wildcard $(PATCHES)/uboottools/*.patch)
 	cd $(DIR) && $(SYSROOT_VARS) $(UBOOTTOOLS_VARS) $(MAKE) defconfig
 	cd $(DIR) && $(SYSROOT_VARS) $(UBOOTTOOLS_VARS) $(MAKE) tools envtools
 	cd $(DIR) && install -m 755 -t "$(HPREFIX)/bin" \
