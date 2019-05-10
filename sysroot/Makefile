@@ -369,7 +369,7 @@ $(ART_libffi): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_glib): | $(ART_pkgconfig) $(ART_libffi) $(ART_pcre) $(ART_util_linux)
+$(ART_glib): | $(ART_pkgconfig) $(ART_python) $(ART_libffi) $(ART_pcre) $(ART_util_linux)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
