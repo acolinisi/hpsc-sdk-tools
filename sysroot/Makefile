@@ -29,6 +29,7 @@ SYSROOT=$(BLD)/sysroot
 FETCH=$(BLD)/fetch
 FETCH_CACHE?=$(FETCH)
 WORK=$(BLD)/work
+PATCHES=patch
 
 PREFIX=$(SYSROOT)/usr
 HPREFIX=$(abspath $(PREFIX))
@@ -42,6 +43,7 @@ PC64=$(PREFIX)/lib64/pkgconfig
 WGET=wget
 TAR=tar
 UNZIP=unzip
+PATCH=patch
 # ... built while building the SDK (must be absolute paths, not via $(BIN))
 FAKEROOT=$(HPREFIX)/bin/fakeroot
 PYTHON=$(HPREFIX)/bin/python3
@@ -121,8 +123,8 @@ DEPS_NATIVE=$(DEPS_LIB) $(DEPS_TOOL)
 DEPS=$(DEPS_NATIVE) $(DEPS_PY)
 
 # Versions (also, comment here due to line continuations being in the way above)
-VER_attr=2.4.48
-VER_libcap=2.24
+VER_attr=2.4.47
+VER_libcap=2.25
 VER_fakeroot=1.23
 VER_MAJMIN_util_linux=2.33
 VER_PATCH_util_linux=1
@@ -157,6 +159,7 @@ VER_configparser=3.7.4
 
 # Tarball name: default to "name-ver.tar.gz", and override the exceptions
 $(foreach d,$(DEPS),$(eval TARBALL_$(d)=$(d)-$(VER_$(d)).tar.gz))
+TARBALL_attr=attr-$(VER_attr).src.tar.gz
 TARBALL_libcap=libcap2_$(VER_libcap).orig.tar.xz
 TARBALL_fakeroot=fakeroot_$(VER_fakeroot).orig.tar.xz
 TARBALL_util_linux=util-linux-$(VER_util_linux).tar.xz
@@ -334,6 +337,7 @@ $(ART_attr): | $(ART_pkgconfig)
 	$(MAKE) -C $(DIR) install
 
 $(ART_libcap): | $(ART_pkgconfig) $(ART_attr)
+	$(PATCH) -d $(DIR) -p1 < $(wildcard $(PATCHES)/libcap/*.patch)
 	$(MAKE) -C $(DIR) DESTDIR=$(abspath $(SYSROOT)) LDFLAGS+=-L$(HPREFIX)/lib \
 		RAISE_SETFCAP=no install \
 
