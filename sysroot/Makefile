@@ -399,7 +399,7 @@ $(ART_screen): | $(ART_pkgconfig) $(ART_ncurses)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_curl): | $(ART_pkgconfig)
+$(ART_curl): | $(ART_pkgconfig) $(ART_openssl)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
