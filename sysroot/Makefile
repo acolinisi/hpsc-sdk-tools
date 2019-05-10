@@ -123,6 +123,9 @@ DEPS_NATIVE=$(DEPS_LIB) $(DEPS_TOOL)
 DEPS=$(DEPS_NATIVE) $(DEPS_PY)
 
 # Versions (also, comment here due to line continuations being in the way above)
+# Constraints: support GCC >= 4.4
+
+# attr 2.4.48 requires GCC >= 4.5
 VER_attr=2.4.47
 VER_libcap=2.25
 VER_fakeroot=1.23
