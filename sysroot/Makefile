@@ -75,7 +75,7 @@ env-clean:
 # Reason for dependency in recorded in target definitions
 DEPS_LIB=\
 	attr \
-	libcap2 \
+	libcap \
 	util_linux \
 	pcre \
 	libffi \
@@ -122,7 +122,7 @@ DEPS=$(DEPS_NATIVE) $(DEPS_PY)
 
 # Versions (also, comment here due to line continuations being in the way above)
 VER_attr=2.4.48
-VER_libcap2=2.24
+VER_libcap=2.24
 VER_fakeroot=1.23
 VER_MAJMIN_util_linux=2.33
 VER_PATCH_util_linux=1
@@ -157,7 +157,7 @@ VER_configparser=3.7.4
 
 # Tarball name: default to "name-ver.tar.gz", and override the exceptions
 $(foreach d,$(DEPS),$(eval TARBALL_$(d)=$(d)-$(VER_$(d)).tar.gz))
-TARBALL_libcap2=libcap2_$(VER_libcap2).orig.tar.xz
+TARBALL_libcap=libcap2_$(VER_libcap).orig.tar.xz
 TARBALL_fakeroot=fakeroot_$(VER_fakeroot).orig.tar.xz
 TARBALL_util_linux=util-linux-$(VER_util_linux).tar.xz
 TARBALL_pcre=pcre-$(VER_pcre).tar.bz2
@@ -182,7 +182,7 @@ DIR_uboottools=u-boot-$(VER_uboottools)
 DIR_pkgconfig=pkg-config-$(VER_pkgconfig)
 
 URL_attr=http://download.savannah.nongnu.org/releases/attr
-URL_libcap2=http://ftp.debian.org/debian/pool/main/libc/libcap2
+URL_libcap=http://ftp.debian.org/debian/pool/main/libc/libcap2
 URL_fakeroot=http://deb.debian.org/debian/pool/main/f/fakeroot
 URL_util_linux=https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(VER_MAJMIN_util_linux)
 URL_pcre=https://ftp.pcre.org/pub/pcre
@@ -209,7 +209,7 @@ $(foreach p,$(DEPS_PY),\
 
 # Artifacts in order to be able to define a dep tree (required for each dep)
 ART_attr=$(PC)/libattr.pc
-ART_libcap2=$(PC64)/libcap.pc
+ART_libcap=$(PC64)/libcap.pc
 ART_util_linux=$(PC)/mount.pc
 ART_pcre=$(PC)/libpcre.pc
 ART_libffi=$(PC)/libffi.pc
@@ -333,11 +333,11 @@ $(ART_attr): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_libcap2): | $(ART_pkgconfig) $(ART_attr)
+$(ART_libcap): | $(ART_pkgconfig) $(ART_attr)
 	$(MAKE) -C $(DIR) DESTDIR=$(abspath $(SYSROOT)) LDFLAGS+=-L$(HPREFIX)/lib \
 		RAISE_SETFCAP=no install \
 
-$(ART_fakeroot): | $(ART_pkgconfig) $(ART_libcap2)
+$(ART_fakeroot): | $(ART_pkgconfig) $(ART_libcap)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) 
 	$(MAKE) -C $(DIR) install
 
