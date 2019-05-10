@@ -35,6 +35,7 @@ PREFIX=$(SYSROOT)/usr
 HPREFIX=$(abspath $(PREFIX))
 
 BIN=$(PREFIX)/bin
+INC=$(PREFIX)/include
 PC=$(PREFIX)/lib/pkgconfig
 PC64=$(PREFIX)/lib64/pkgconfig
 
@@ -83,6 +84,7 @@ DEPS_LIB=\
 	libffi \
 	glib \
 	pixman \
+	libxfs \
 	sqlite \
 	ncurses \
 	openssl \
@@ -138,6 +140,7 @@ VER_MAJMIN_glib=2.54
 VER_PATCH_glib=3
 VER_glib=$(VER_MAJMIN_glib).$(VER_PATCH_glib)
 VER_pixman=0.38.0
+VER_libxfs=4.20.0
 VER_sqlite=3.28.0
 VER_sqlite_NUM=3280000
 VER_dtc=1.5.0
@@ -169,6 +172,7 @@ TARBALL_fakeroot=fakeroot_$(VER_fakeroot).orig.tar.xz
 TARBALL_util_linux=util-linux-$(VER_util_linux).tar.xz
 TARBALL_pcre=pcre-$(VER_pcre).tar.bz2
 TARBALL_glib=glib-$(VER_glib).tar.xz
+TARBALL_libxfs=xfsprogs-$(VER_libxfs).tar.xz
 TARBALL_sqlite=sqlite-autoconf-$(VER_sqlite_NUM).tar.gz
 TARBALL_git=git-$(VER_git).tar.xz
 TARBALL_setuptools=setuptools-$(VER_setuptools).zip
@@ -183,6 +187,7 @@ $(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
 # Name of directory in tarball: default to "name-ver", and override exceptions
 $(foreach d,$(DEPS),$(eval DIR_$(d)=$(d)-$(VER_$(d))))
 DIR_util_linux=util-linux-$(VER_util_linux)
+DIR_libxfs=xfsprogs-$(VER_libxfs)
 DIR_sqlite=sqlite-autoconf-$(VER_sqlite_NUM)
 DIR_python=Python-$(VER_python)
 DIR_uboottools=u-boot-$(VER_uboottools)
@@ -208,6 +213,7 @@ URL_texinfo=https://ftp.gnu.org/gnu/texinfo
 URL_uboottools=ftp://ftp.denx.de/pub/u-boot
 URL_make=https://ftp.gnu.org/gnu/make
 URL_pkgconfig=https://pkg-config.freedesktop.org/releases
+URL_libxfs=https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -226,6 +232,7 @@ ART_sqlite=$(PC)/sqlite3.pc
 ART_ncurses=$(PC)/ncurses.pc
 ART_openssl=$(PC64)/openssl.pc
 ART_curl=$(PC)/libcurl.pc
+ART_libxfs=$(INC)/xfs/xfs.h
 
 ART_fakeroot=$(BIN)/fakeroot
 ART_dtc=$(BIN)/dtc
@@ -436,6 +443,11 @@ $(ART_make):
 $(ART_pkgconfig):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
+
+$(ART_libxfs):
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR)
+	$(MAKE) -C $(DIR) install-dev # must be separate or parallel make breaks
 
 # Bootstrapping does not appear to be necessary
 #setuptools-bootstrap:
