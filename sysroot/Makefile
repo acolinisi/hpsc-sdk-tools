@@ -342,7 +342,8 @@ SYSROOT_VARS=\
 
 $(ART_attr): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
+	$(MAKE) -C $(DIR)
+	$(MAKE) -C $(DIR) install # must be separate, or parallel make breaks
 
 $(ART_libcap): | $(ART_pkgconfig) $(ART_attr)
 	$(PATCH) -d $(DIR) -p1 < $(wildcard $(PATCHES)/libcap/*.patch)
