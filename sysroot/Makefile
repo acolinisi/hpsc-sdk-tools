@@ -328,73 +328,73 @@ SYSROOT_VARS=\
 	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib -Wl,-rpath=$(HPREFIX)/lib64 -Wl,-rpath=$(HPREFIX)/lib" \
 	PATH="$(HPREFIX)/bin:$$PATH" \
 
-$(ART_attr): $(ART_pkgconfig)
+$(ART_attr): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_libcap2): $(ART_pkgconfig) $(ART_attr)
+$(ART_libcap2): | $(ART_pkgconfig) $(ART_attr)
 	$(MAKE) -C $(DIR) DESTDIR=$(abspath $(SYSROOT)) LDFLAGS+=-L$(HPREFIX)/lib \
 		RAISE_SETFCAP=no install \
 
-$(ART_fakeroot): $(ART_pkgconfig) $(ART_libcap2)
+$(ART_fakeroot): | $(ART_pkgconfig) $(ART_libcap2)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) 
 	$(MAKE) -C $(DIR) install
 
-$(ART_util_linux): $(ART_pkgconfig) $(ART_fakeroot)
+$(ART_util_linux): | $(ART_pkgconfig) $(ART_fakeroot)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 			--with-bashcompletiondir=$(HPREFIX)/share/bash-completions
 	$(MAKE) -C $(DIR)
 	$(FAKEROOT) $(MAKE) -C $(DIR) install
 
-$(ART_pcre): $(ART_pkgconfig)
+$(ART_pcre): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 		--enable-utf --enable-unicode-properties
 	$(MAKE) -C $(DIR) install
 
-$(ART_libffi): $(ART_pkgconfig)
+$(ART_libffi): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_glib): $(ART_pkgconfig) $(ART_libffi) $(ART_pcre) $(ART_util_linux)
+$(ART_glib): | $(ART_pkgconfig) $(ART_libffi) $(ART_pcre) $(ART_util_linux)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_pixman): $(ART_pkgconfig)
+$(ART_pixman): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	make -C $(DIR) install
 
-$(ART_sqlite): $(ART_pkgconfig)
+$(ART_sqlite): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	make -C $(DIR) install
 
-$(ART_ncurses): $(ART_pkgconfig)
+$(ART_ncurses): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
 		--with-pkg-config-libdir=$(HPREFIX)/lib/pkgconfig \
 		--enable-pc-files --with-shared --without-ada
 	$(MAKE) -C $(DIR) install
 
-$(ART_openssl): $(ART_pkgconfig)
+$(ART_openssl): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./config --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR)
 	$(MAKE) -C $(DIR) install
 
-$(ART_dtc): $(ART_pkgconfig)
+$(ART_dtc): | $(ART_pkgconfig)
 	$(MAKE) -C $(DIR) NO_PYTHON=1 PREFIX=$(HPREFIX) install
 
-$(ART_screen): $(ART_pkgconfig) $(ART_ncurses)
+$(ART_screen): | $(ART_pkgconfig) $(ART_ncurses)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_curl): $(ART_pkgconfig)
+$(ART_curl): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
-$(ART_git): $(ART_pkgconfig) $(ART_curl)
+$(ART_git): | $(ART_pkgconfig) $(ART_curl)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
 	$(MAKE) -C $(DIR) install
 
 PY_PKGCFG_DEPS=ncurses libffi
-$(ART_python): $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
+$(ART_python): | $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 	cd $(DIR) && $(SYSROOT_VARS) \
 		CFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG)--cflags $(PY_PKGCFG_DEPS))" \
 		CPPFLAGS+="$$CFLAGS" \
@@ -402,12 +402,12 @@ $(ART_python): $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions --enable-optimizations
 	$(MAKE) -C $(DIR) install
 
-$(ART_texinfo): $(ART_pkgconfig)
+$(ART_texinfo): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
 
 UBOOTTOOLS_VARS=HOST_EXTRACFLAGS="-I$(HPREFIX)/include"
-$(ART_uboottools): $(ART_pkgconfig)
+$(ART_uboottools): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) $(UBOOTTOOLS_VARS) $(MAKE) defconfig
 	cd $(DIR) && $(SYSROOT_VARS) $(UBOOTTOOLS_VARS) $(MAKE) tools envtools
 	cd $(DIR) && install -m 755 -t "$(HPREFIX)/bin" \
