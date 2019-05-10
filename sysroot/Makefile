@@ -241,7 +241,8 @@ py-clean: $(foreach d,$(DEPS_PY),$(d)-clean)
 
 fetch: $(foreach d,$(DEPS),$(FETCH)/$(TARBALL_$(d)))
 
-%/ :
+# Ideally, this would be "%/:" but make <=3.81 eats trailing slashes
+%/. :
 	mkdir -p $@
 
 # don't clean fetched tarballs unless explicitly requested
@@ -264,7 +265,7 @@ fetch-%-clean:
 
 define fetch-rule
 fetch: $(FETCH)/$(TARBALL_$(1))
-$(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/
+$(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/.
 	$(WGET) --no-verbose -O $$@ $(URL_$(1))/$(FNAME_$(1))
 .INTERMEDIATE: $(FETCH_CACHE)/$(TARBALL_$(1))
 .SECONDARY: $(FETCH_CACHE)/$(TARBALL_$(1))
@@ -272,21 +273,21 @@ endef
 
 # We make a copy, so that we're self-sufficient in case FETCH_CACHE goes away
 ifneq ($(FETCH),$(FETCH_CACHE))
-$(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/
+$(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/.
 	cp $< $@
 endif
-.SECONDARY: $(FETCH)/
+.SECONDARY: $(FETCH)/.
 
 # touch the directory, since the timestamp of the dir in tar may be stored and
 # it will be older than the tarball, which would cause the target to be remade.
 define extract-rule-tar
-$(3)/$(DIR_$(1)): $(2)/$(TARBALL_$(1)) | $(3)/
+$(3)/$(DIR_$(1)): $(2)/$(TARBALL_$(1)) | $(3)/.
 	$(TAR) -C $(3) -x -f $$<
 	touch $$@
 endef
 
 define extract-rule-zip
-$(3)/$(DIR_$(1)): $(2)/$(TARBALL_$(1)) | $(3)/
+$(3)/$(DIR_$(1)): $(2)/$(TARBALL_$(1)) | $(3)/.
 	cd $(3) && $(UNZIP) -o -q $(abspath $$<)
 endef
 
