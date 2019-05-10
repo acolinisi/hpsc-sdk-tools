@@ -278,7 +278,11 @@ $(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/.
 endef
 
 # We make a copy, so that we're self-sufficient in case FETCH_CACHE goes away
-ifneq ($(FETCH),$(FETCH_CACHE))
+ifneq ($(patsubst %.,%,$(FETCH)),$(FETCH_CACHE)) # strip . from /. (see mkdir rule)
+# This mkdir rule is so that $(FETCH)/% doesn't match $(FETCH)/. and create
+# a circular dependency. This is only needed with the /. workaround (see mkdir rule)
+$(FETCH)/.:
+	mkdir -p $@
 $(FETCH)/%: $(FETCH_CACHE)/% | $(FETCH)/.
 	cp $< $@
 endif
