@@ -417,9 +417,9 @@ $(ART_git): | $(ART_pkgconfig) $(ART_curl)
 PY_PKGCFG_DEPS=ncurses libffi
 $(ART_python): | $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 	cd $(DIR) && $(SYSROOT_VARS) \
-		CFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG)--cflags $(PY_PKGCFG_DEPS))" \
+		CFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --cflags $(PY_PKGCFG_DEPS))" \
 		CPPFLAGS+="$$CFLAGS" \
-		LDFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG)--libs $(PY_PKGCFG_DEPS))" \
+		LDFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --libs $(PY_PKGCFG_DEPS))" \
 		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions --enable-optimizations
 	$(MAKE) -C $(DIR) install
 
