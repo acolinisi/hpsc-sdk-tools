@@ -93,7 +93,7 @@ endif
 # touch the directory, since the timestamp of the dir in tar may be stored and
 # it will be older than the tarball, which would cause the target to be remade.
 define extract-rule
-$(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(TC)/.
+$(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(2)/.
 	$(TAR) -C $(2) -x -f $$<
 	touch $$@
 $(1) : | $(2)/$(DIR_$(1))
