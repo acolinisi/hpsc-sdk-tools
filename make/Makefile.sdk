@@ -6,10 +6,15 @@ BLD_TO_ROOT=..
 FETCH=$(BLD)/fetch
 FETCH_CACHE?=$(FETCH)
 TC=$(BLD)/tc
+WORK=$(BLD)/work
 BLD_QEMU=$(BLD)/qemu
 BLD_QEMU_TO_ROOT=$(BLD_TO_ROOT)/..
 SDK_TOOLS=hpsc-sdk-tools
 SYSROOT=$(SDK_TOOLS)/sysroot
+
+# Sysroot for binary toolchains (not to be confused with hpsc-sdk-tools/sysroot)
+TC_SYSROOT=$(BLD)/sysroot
+TC_PREFIX=$(TC_SYSROOT)/usr
 
 # Host tools needed to build the SDK (not including deps of nested builds)
 WGET=wget
@@ -47,7 +52,10 @@ DEPS_TC=\
 	arm_gnu_rm \
 	arm_gnu_a \
 
-DEPS=$(DEPS_TC)
+DEPS_LIB=\
+	glibc \
+
+DEPS=$(DEPS_LIB) $(DEPS_TC)
 
 toolchains: $(DEPS_TC)
 toolchains-clean:
@@ -66,6 +74,20 @@ DIR_arm_gnu_rm=gcc-arm-none-eabi-7-2018-q2-update
 URL_arm_gnu_a=https://releases.linaro.org/components/toolchain/binaries/latest-7/aarch64-linux-gnu
 TARBALL_arm_gnu_a=gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
 DIR_arm_gnu_a=gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu
+
+# glibc >= 2.14 is required by pre-built toolchains
+# ...but glibc >=2.21 needs GCC >= 4.6; glibc >= 2.20 needs GCC >= 4.4)
+VER_glibc=2.20
+URL_glibc=https://ftp.gnu.org/gnu/libc
+TARBALL_glibc=glibc-$(VER_glibc).tar.xz
+DIR_glibc=glibc-$(VER_glibc)
+ART_glibc=$(TC_PREFIX)/lib/libc.so
+
+$(ART_glibc):
+	mkdir -p $(DIR)/build
+	cd $(DIR)/build && ../configure --prefix=$(abspath $(TC_PREFIX))
+	$(MAKE) -C $(DIR)/build
+	$(MAKE) -C $(DIR)/build install
 
 # Ideally, this would be "%/:" but make <=3.81 eats trailing slashes
 %/. :
@@ -99,8 +121,36 @@ $(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(2)/.
 $(1) : | $(2)/$(DIR_$(1))
 endef
 
-$(foreach d,$(DEPS),$(eval $(call fetch-rule,$(d))))
-$(foreach d,$(DEPS_TC),$(eval $(call extract-rule,$(d),$(TC))))
+define clean-rule
+$(1)-clean:
+	rm -rf $(WORK)/$(DIR_$(1)) $(ART_$(1))
+endef
+
+define tc-relocate-rule
+$(1): tc-$(1)-relocate
+endef
+
+tc-%-relocate:
+	find $(TC)/$(DIR_$*)/bin -type f -executable -exec \
+		patchelf --set-interpreter $(abspath $(TC_PREFIX)/lib/ld-$(VER_glibc).so) \
+		--set-rpath $(abspath $(TC_PREFIX)/lib) {} \;
+
+$(foreach d,$(DEPS),\
+	$(eval $(call fetch-rule,$(d)))\
+	$(eval $(call clean-rule,$(d))))
+$(foreach d,$(DEPS_TC),\
+	$(eval $(call extract-rule,$(d),$(TC)))\
+	$(eval $(call tc-relocate-rule,$(d),$(TC))))
+$(foreach d,$(DEPS_LIB),$(eval $(call extract-rule,$(d),$(WORK))))
+
+# Make extract target a prereq of build/install target
+$(foreach d,$(DEPS),$(eval $(ART_$(d)): | $(WORK)/$(DIR_$(d))))
+
+# Alias for each dependency, that points to the artifact
+$(foreach d,$(DEPS_LIB),$(eval $(d): $(ART_$(d))))
+
+# Define per-target DIR to allow recipies to be more concise
+$(foreach d,$(DEPS),$(eval $(ART_$(d)): DIR=$(WORK)/$(DIR_$(d))))
 
 # Several alternatives for installing dependencies
 
