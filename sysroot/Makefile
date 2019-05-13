@@ -206,6 +206,7 @@ URL_pcre=https://ftp.pcre.org/pub/pcre
 URL_libffi=ftp://sourceware.org/pub/libffi
 URL_glib=http://ftp.gnome.org/pub/gnome/sources/glib/$(VER_MAJMIN_glib)
 URL_pixman=https://www.cairographics.org/releases
+URL_libxfs=https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs
 URL_sqlite=https://www.sqlite.org/2019
 URL_dtc=https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot
 URL_ncurses=https://invisible-mirror.net/archives/ncurses
@@ -219,7 +220,6 @@ URL_texinfo=https://ftp.gnu.org/gnu/texinfo
 URL_uboottools=ftp://ftp.denx.de/pub/u-boot
 URL_make=https://ftp.gnu.org/gnu/make
 URL_pkgconfig=https://pkg-config.freedesktop.org/releases
-URL_libxfs=https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -391,6 +391,11 @@ $(ART_pixman): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	make -C $(DIR) install
 
+$(ART_libxfs): | $(ART_util_linux)
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR)
+	$(MAKE) -C $(DIR) install-dev # must be separate or parallel make breaks
+
 $(ART_sqlite): | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	make -C $(DIR) install
@@ -450,11 +455,6 @@ $(ART_make):
 $(ART_pkgconfig):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR) install
-
-$(ART_libxfs):
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR)
-	$(MAKE) -C $(DIR) install-dev # must be separate or parallel make breaks
 
 # Bootstrapping does not appear to be necessary
 #setuptools-bootstrap:
