@@ -126,139 +126,153 @@ DEPS_PY=\
 DEPS_NATIVE=$(DEPS_LIB) $(DEPS_TOOL)
 DEPS=$(DEPS_NATIVE) $(DEPS_PY)
 
-# Versions (also, comment here due to line continuations being in the way above)
-# Constraints: support GCC >= 4.4
-
-# attr 2.4.48 requires GCC >= 4.5
-VER_attr=2.4.47
-VER_libcap=2.25
-VER_fakeroot=1.23
-VER_MAJMIN_util_linux=2.33
-VER_PATCH_util_linux=1
-VER_util_linux=$(VER_MAJMIN_util_linux).$(VER_PATCH_util_linux)
-VER_pcre=8.42
-VER_libffi=3.2.1
-VER_MAJMIN_glib=2.54
-VER_PATCH_glib=3
-VER_glib=$(VER_MAJMIN_glib).$(VER_PATCH_glib)
-VER_pixman=0.38.0
-VER_libxfs=4.20.0
-VER_sqlite=3.28.0
-VER_sqlite_NUM=3280000
-VER_dtc=1.5.0
-VER_ncurses=6.1
-VER_openssl=1.1.1b
-VER_curl=7.64.1
-VER_screen=4.6.2
-VER_git=2.21.0
-VER_MAJMIN_python=3.7
-VER_PATCH_python=3
-VER_python=$(VER_MAJMIN_python).$(VER_PATCH_python)
-# Python2 is needed by Yocto build, not used anywhere else (see HOSTTOOLS)
-VER_python2=2.7.16
-VER_texinfo=6.6
-# u-boot >=2018.05 requires GCC >= 6 (but 2018.05 breaks, so we patch 2019.01)
-VER_uboottools=2019.01
-VER_make=4.2
-VER_pkgconfig=0.29.2
-# patchelf >= 0.10 requires c++11 which is not supported by GCC <=4.4)
-VER_patchelf=0.9
-
-# Python packages
-VER_setuptools=40.8.0
-VER_argparse=1.4.0
-VER_pprint=0.1
-VER_configparser=3.7.4
-
-# Tarball name: default to "name-ver.tar.gz", and override the exceptions
-$(foreach d,$(DEPS),$(eval TARBALL_$(d)=$(d)-$(VER_$(d)).tar.gz))
-TARBALL_attr=attr-$(VER_attr).src.tar.gz
-TARBALL_libcap=libcap2_$(VER_libcap).orig.tar.xz
-TARBALL_fakeroot=fakeroot_$(VER_fakeroot).orig.tar.xz
-TARBALL_util_linux=util-linux-$(VER_util_linux).tar.xz
-TARBALL_pcre=pcre-$(VER_pcre).tar.bz2
-TARBALL_glib=glib-$(VER_glib).tar.xz
-TARBALL_libxfs=xfsprogs-$(VER_libxfs).tar.xz
-TARBALL_sqlite=sqlite-autoconf-$(VER_sqlite_NUM).tar.gz
-TARBALL_git=git-$(VER_git).tar.xz
-TARBALL_setuptools=setuptools-$(VER_setuptools).zip
-TARBALL_python=Python-$(VER_python).tar.xz
-TARBALL_python2=Python-$(VER_python2).tar.xz
-TARBALL_uboottools=u-boot-$(VER_uboottools).tar.bz2
-TARBALL_pkgconfig=pkg-config-$(VER_pkgconfig).tar.gz
-
-# Filename in URL: default to TARBALL name, and override exceptions
+# Defaults for url fname, tarballs and dirs, override the exceptions below
 $(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
-#FNAME_setuptools=v$(VER_setuptools).tar.gz
-
-# Name of directory in tarball: default to "name-ver", and override exceptions
+$(foreach d,$(DEPS),$(eval TARBALL_$(d)=$(d)-$(VER_$(d)).tar.gz))
 $(foreach d,$(DEPS),$(eval DIR_$(d)=$(d)-$(VER_$(d))))
-DIR_util_linux=util-linux-$(VER_util_linux)
-DIR_libxfs=xfsprogs-$(VER_libxfs)
-DIR_sqlite=sqlite-autoconf-$(VER_sqlite_NUM)
-DIR_python=Python-$(VER_python)
-DIR_python2=Python-$(VER_python2)
-DIR_uboottools=u-boot-$(VER_uboottools)
-DIR_pkgconfig=pkg-config-$(VER_pkgconfig)
 
-URL_attr=http://download.savannah.nongnu.org/releases/attr
-URL_libcap=http://ftp.debian.org/debian/pool/main/libc/libcap2
-URL_fakeroot=http://deb.debian.org/debian/pool/main/f/fakeroot
-URL_util_linux=https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(VER_MAJMIN_util_linux)
-URL_pcre=https://ftp.pcre.org/pub/pcre
-URL_libffi=ftp://sourceware.org/pub/libffi
-URL_glib=http://ftp.gnome.org/pub/gnome/sources/glib/$(VER_MAJMIN_glib)
-URL_pixman=https://www.cairographics.org/releases
-URL_libxfs=https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs
-URL_sqlite=https://www.sqlite.org/2019
-URL_dtc=https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot
-URL_ncurses=https://invisible-mirror.net/archives/ncurses
-URL_openssl=https://www.openssl.org/source
-URL_curl=https://curl.haxx.se/download
-URL_screen=https://ftp.gnu.org/gnu/screen
-URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
-URL_python=https://www.python.org/ftp/python/$(VER_python)
-URL_python2=https://www.python.org/ftp/python/$(VER_python2)
-URL_texinfo=https://ftp.gnu.org/gnu/texinfo
-URL_uboottools=ftp://ftp.denx.de/pub/u-boot
-URL_make=https://ftp.gnu.org/gnu/make
-URL_pkgconfig=https://pkg-config.freedesktop.org/releases
-URL_patchelf=https://nixos.org/releases/patchelf/patchelf-$(VER_patchelf)
-
-# Default to downloading from PyPI, but should there be any exceptions, simply
-# define their respective URL vars below.
+# Default URL for python packages for downloading from PyPI, but should there
+# be any exceptions, simply define their respective URL vars below.
 $(foreach p,$(DEPS_PY),\
 	$(eval URL_$(p)=https://pypi.io/packages/source/$(shell echo $(p) | head -c 1)/$(p)))
 
-# Artifacts in order to be able to define a dep tree (required for each dep)
-ART_attr=$(BIN)/attr # for >=2.4.48 use $(PC)/libattr.pc
-ART_libcap=$(PC64)/libcap.pc
-ART_util_linux=$(PC)/mount.pc
-ART_pcre=$(PC)/libpcre.pc
-ART_libffi=$(PC)/libffi.pc
-ART_glib=$(PC)/glib-2.0.pc
-ART_pixman=$(PC)/pixman-1.pc
-ART_sqlite=$(PC)/sqlite3.pc
-ART_ncurses=$(PC)/ncurses.pc
-ART_openssl=$(PC64)/openssl.pc
-ART_curl=$(PC)/libcurl.pc
-ART_libxfs=$(INC)/xfs/xfs.h
-
-ART_fakeroot=$(BIN)/fakeroot
-ART_dtc=$(BIN)/dtc
-ART_screen=$(BIN)/screen
-ART_git=$(BIN)/git
-ART_python=$(BIN)/python3
-ART_python2=$(BIN)/python2
-ART_texinfo=$(BIN)/makeinfo
-ART_uboottools=$(BIN)/mkimage
-ART_make=$(BIN)/make
-ART_pkgconfig=$(BIN)/pkg-config
-ART_patchelf=$(BIN)/patchelf
-
-# For python packages artifacts are standard, but any exceptions can override
+# Default for artifacts for python packages artifacts, override the exceptions below
 $(foreach p,$(DEPS_PY),\
 	$(eval ART_$(p)=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(VER_MAJMIN_python).egg))
+
+# Constraints on versions: support GCC >= 4.4
+
+# attr 2.4.48 requires GCC >= 4.5
+VER_attr=2.4.47
+URL_attr=http://download.savannah.nongnu.org/releases/attr
+TARBALL_attr=attr-$(VER_attr).src.tar.gz
+ART_attr=$(BIN)/attr # for >=2.4.48 use $(PC)/libattr.pc
+
+VER_libcap=2.25
+URL_libcap=http://ftp.debian.org/debian/pool/main/libc/libcap2
+TARBALL_libcap=libcap2_$(VER_libcap).orig.tar.xz
+ART_libcap=$(PC64)/libcap.pc
+
+VER_fakeroot=1.23
+URL_fakeroot=http://deb.debian.org/debian/pool/main/f/fakeroot
+TARBALL_fakeroot=fakeroot_$(VER_fakeroot).orig.tar.xz
+ART_fakeroot=$(BIN)/fakeroot
+
+VER_MAJMIN_util_linux=2.33
+VER_PATCH_util_linux=1
+VER_util_linux=$(VER_MAJMIN_util_linux).$(VER_PATCH_util_linux)
+URL_util_linux=https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(VER_MAJMIN_util_linux)
+TARBALL_util_linux=util-linux-$(VER_util_linux).tar.xz
+DIR_util_linux=util-linux-$(VER_util_linux)
+ART_util_linux=$(PC)/mount.pc
+
+VER_pcre=8.42
+URL_pcre=https://ftp.pcre.org/pub/pcre
+TARBALL_pcre=pcre-$(VER_pcre).tar.bz2
+ART_pcre=$(PC)/libpcre.pc
+
+VER_libffi=3.2.1
+URL_libffi=ftp://sourceware.org/pub/libffi
+ART_libffi=$(PC)/libffi.pc
+
+VER_MAJMIN_glib=2.54
+VER_PATCH_glib=3
+VER_glib=$(VER_MAJMIN_glib).$(VER_PATCH_glib)
+URL_glib=http://ftp.gnome.org/pub/gnome/sources/glib/$(VER_MAJMIN_glib)
+ART_glib=$(PC)/glib-2.0.pc
+
+VER_pixman=0.38.0
+URL_pixman=https://www.cairographics.org/releases
+ART_pixman=$(PC)/pixman-1.pc
+
+VER_libxfs=4.20.0
+URL_libxfs=https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs
+TARBALL_libxfs=xfsprogs-$(VER_libxfs).tar.xz
+DIR_libxfs=xfsprogs-$(VER_libxfs)
+ART_libxfs=$(INC)/xfs/xfs.h
+
+VER_sqlite=3.28.0
+URL_sqlite=https://www.sqlite.org/2019
+VER_sqlite_NUM=3280000
+TARBALL_sqlite=sqlite-autoconf-$(VER_sqlite_NUM).tar.gz
+DIR_sqlite=sqlite-autoconf-$(VER_sqlite_NUM)
+ART_sqlite=$(PC)/sqlite3.pc
+
+VER_dtc=1.5.0
+URL_dtc=https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot
+ART_dtc=$(BIN)/dtc
+
+VER_ncurses=6.1
+URL_ncurses=https://invisible-mirror.net/archives/ncurses
+ART_ncurses=$(PC)/ncurses.pc
+
+VER_openssl=1.1.1b
+URL_openssl=https://www.openssl.org/source
+ART_openssl=$(PC64)/openssl.pc
+
+VER_curl=7.64.1
+URL_curl=https://curl.haxx.se/download
+ART_curl=$(PC)/libcurl.pc
+
+VER_screen=4.6.2
+URL_screen=https://ftp.gnu.org/gnu/screen
+ART_screen=$(BIN)/screen
+
+VER_git=2.21.0
+URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
+TARBALL_git=git-$(VER_git).tar.xz
+ART_git=$(BIN)/git
+
+VER_MAJMIN_python=3.7
+VER_PATCH_python=3
+VER_python=$(VER_MAJMIN_python).$(VER_PATCH_python)
+URL_python=https://www.python.org/ftp/python/$(VER_python)
+TARBALL_python=Python-$(VER_python).tar.xz
+DIR_python=Python-$(VER_python)
+ART_python=$(BIN)/python3
+
+# Python2 is needed by Yocto build, not used anywhere else (see HOSTTOOLS)
+VER_python2=2.7.16
+URL_python2=https://www.python.org/ftp/python/$(VER_python2)
+TARBALL_python2=Python-$(VER_python2).tar.xz
+DIR_python2=Python-$(VER_python2)
+ART_python2=$(BIN)/python2
+
+VER_texinfo=6.6
+URL_texinfo=https://ftp.gnu.org/gnu/texinfo
+ART_texinfo=$(BIN)/makeinfo
+
+# u-boot >=2018.05 requires GCC >= 6 (but 2018.05 breaks, so we patch 2019.01)
+VER_uboottools=2019.01
+URL_uboottools=ftp://ftp.denx.de/pub/u-boot
+TARBALL_uboottools=u-boot-$(VER_uboottools).tar.bz2
+DIR_uboottools=u-boot-$(VER_uboottools)
+ART_uboottools=$(BIN)/mkimage
+
+# SSW makefile requires make >= 3.81
+VER_make=4.2
+URL_make=https://ftp.gnu.org/gnu/make
+ART_make=$(BIN)/make
+
+VER_pkgconfig=0.29.2
+URL_pkgconfig=https://pkg-config.freedesktop.org/releases
+TARBALL_pkgconfig=pkg-config-$(VER_pkgconfig).tar.gz
+DIR_pkgconfig=pkg-config-$(VER_pkgconfig)
+ART_pkgconfig=$(BIN)/pkg-config
+
+# patchelf >= 0.10 requires c++11 which is not supported by GCC <=4.4)
+VER_patchelf=0.9
+URL_patchelf=https://nixos.org/releases/patchelf/patchelf-$(VER_patchelf)
+ART_patchelf=$(BIN)/patchelf
+
+# Python packages
+
+VER_setuptools=40.8.0
+TARBALL_setuptools=setuptools-$(VER_setuptools).zip
+
+VER_argparse=1.4.0
+VER_pprint=0.1
+VER_configparser=3.7.4
 
 libs: $(DEPS_LIB)
 tools: $(DEPS_TOOL)
