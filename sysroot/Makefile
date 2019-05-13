@@ -108,6 +108,7 @@ DEPS_TOOL=\
 	uboottools \
 	make \
 	pkgconfig \
+	patchelf \
 
 # Python packages
 #
@@ -160,6 +161,8 @@ VER_texinfo=6.6
 VER_uboottools=2019.01
 VER_make=4.2
 VER_pkgconfig=0.29.2
+# patchelf >= 0.10 requires c++11 which is not supported by GCC <=4.4)
+VER_patchelf=0.9
 
 # Python packages
 VER_setuptools=40.8.0
@@ -220,6 +223,7 @@ URL_texinfo=https://ftp.gnu.org/gnu/texinfo
 URL_uboottools=ftp://ftp.denx.de/pub/u-boot
 URL_make=https://ftp.gnu.org/gnu/make
 URL_pkgconfig=https://pkg-config.freedesktop.org/releases
+URL_patchelf=https://nixos.org/releases/patchelf/patchelf-$(VER_patchelf)
 
 # Default to downloading from PyPI, but should there be any exceptions, simply
 # define their respective URL vars below.
@@ -250,6 +254,7 @@ ART_texinfo=$(BIN)/makeinfo
 ART_uboottools=$(BIN)/mkimage
 ART_make=$(BIN)/make
 ART_pkgconfig=$(BIN)/pkg-config
+ART_patchelf=$(BIN)/patchelf
 
 # For python packages artifacts are standard, but any exceptions can override
 $(foreach p,$(DEPS_PY),\
@@ -454,6 +459,11 @@ $(ART_make):
 
 $(ART_pkgconfig):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR) install
+
+$(ART_patchelf):
+	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR)
 	$(MAKE) -C $(DIR) install
 
 # Bootstrapping does not appear to be necessary
