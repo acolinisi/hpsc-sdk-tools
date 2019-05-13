@@ -395,6 +395,7 @@ $(ART_texinfo) \
 $(ART_python) \
 $(ART_python2) \
 $(ART_make) \
+$(ART_git) \
 $(ART_patchelf): \
 | $(ART_pkgconfig)
 	cd $(DIR) && $(SYSROOT_VARS) $(SYSROOT_VARS_EXTRA) \
