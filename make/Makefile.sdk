@@ -54,6 +54,7 @@ DEPS_TC=\
 
 DEPS_LIB=\
 	glibc \
+	zlib \
 
 DEPS=$(DEPS_LIB) $(DEPS_TC)
 
@@ -83,11 +84,22 @@ TARBALL_glibc=glibc-$(VER_glibc).tar.xz
 DIR_glibc=glibc-$(VER_glibc)
 ART_glibc=$(TC_PREFIX)/lib/libc.so
 
+VER_zlib=1.2.11
+URL_zlib=https://www.zlib.net
+TARBALL_zlib=zlib-$(VER_zlib).tar.xz
+DIR_zlib=zlib-$(VER_zlib)
+ART_zlib=$(TC_PREFIX)/lib/libz.so
+
 $(ART_glibc):
 	mkdir -p $(DIR)/build
 	cd $(DIR)/build && ../configure --prefix=$(abspath $(TC_PREFIX))
 	$(MAKE) -C $(DIR)/build
 	$(MAKE) -C $(DIR)/build install
+
+$(ART_zlib):
+	cd $(DIR) && ./configure --prefix=$(abspath $(TC_PREFIX))
+	$(MAKE) -C $(DIR)
+	$(MAKE) -C $(DIR) install
 
 # Ideally, this would be "%/:" but make <=3.81 eats trailing slashes
 %/. :
