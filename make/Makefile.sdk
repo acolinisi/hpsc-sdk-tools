@@ -212,9 +212,11 @@ $(BLD_QEMU)/config.status: | $(BLD_QEMU)/.
 		--disable-kvm --disable-xen --enable-debug
 qemu: $(BLD_QEMU)/config.status
 	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS)
-qemu-clean:
+qemu-sclean:
 	$(MAKE) -C $(BLD_QEMU) $(QEMU_ARGS) clean
-.PHONY: qemu qemu-clean
+qemu-clean:
+	rm -rf $(BLD_QEMU)
+.PHONY: qemu qemu-sclean qemu-clean
 
 QDT_ARGS=
 $(QEMU_DT)/LATEST/SINGLE_ARCH/hpsc-arch.dtb: qemu-dt
