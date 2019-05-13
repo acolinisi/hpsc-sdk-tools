@@ -54,7 +54,7 @@ endef
 ENV_FILE=$(BLD)/env.sh
 env: $(ENV_FILE)
 $(ENV_FILE): export ENV_SH=$(ENV)
-$(ENV_FILE):
+$(ENV_FILE): | $(BLD)/.
 	echo "$$ENV_SH" > $@
 env-clean:
 	rm -f $(ENV_FILE)
