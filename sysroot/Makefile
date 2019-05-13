@@ -178,6 +178,7 @@ ART_libffi=$(PC)/libffi.pc
 VER_MAJMIN_glib=2.54
 VER_PATCH_glib=3
 VER_glib=$(VER_MAJMIN_glib).$(VER_PATCH_glib)
+TARBALL_glib=glib-$(VER_glib).tar.xz
 URL_glib=http://ftp.gnome.org/pub/gnome/sources/glib/$(VER_MAJMIN_glib)
 ART_glib=$(PC)/glib-2.0.pc
 
