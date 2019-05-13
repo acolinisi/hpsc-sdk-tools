@@ -139,13 +139,12 @@ $(1)-clean:
 endef
 
 define tc-relocate-rule
-$(1): tc-$(1)-relocate
-endef
-
-tc-%-relocate:
-	find $(TC)/$(DIR_$*)/bin -type f -executable -exec \
+tc-$(1)-relocate: $(TC)/$(DIR_$(1)) $(ART_glibc)
+	find $(TC)/$(DIR_$(1)) -type f -executable -not -name '*.so*' -exec \
 		patchelf --set-interpreter $(abspath $(TC_PREFIX)/lib/ld-$(VER_glibc).so) \
 		--set-rpath $(abspath $(TC_PREFIX)/lib) {} \;
+$(1): tc-$(1)-relocate
+endef
 
 $(foreach d,$(DEPS),\
 	$(eval $(call fetch-rule,$(d)))\
