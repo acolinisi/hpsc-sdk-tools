@@ -126,19 +126,7 @@ DEPS_PY=\
 DEPS_NATIVE=$(DEPS_LIB) $(DEPS_TOOL)
 DEPS=$(DEPS_NATIVE) $(DEPS_PY)
 
-# Defaults for url fname, tarballs and dirs, override the exceptions below
-$(foreach d,$(DEPS),$(eval FNAME_$(d)=$(TARBALL_$(d))))
-$(foreach d,$(DEPS),$(eval TARBALL_$(d)=$(d)-$(VER_$(d)).tar.gz))
-$(foreach d,$(DEPS),$(eval DIR_$(d)=$(d)-$(VER_$(d))))
-
-# Default URL for python packages for downloading from PyPI, but should there
-# be any exceptions, simply define their respective URL vars below.
-$(foreach p,$(DEPS_PY),\
-	$(eval URL_$(p)=https://pypi.io/packages/source/$(shell echo $(p) | head -c 1)/$(p)))
-
-# Default for artifacts for python packages artifacts, override the exceptions below
-$(foreach p,$(DEPS_PY),\
-	$(eval ART_$(p)=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(VER_MAJMIN_python).egg))
+# Components: note that there are default values, see end of this list
 
 # Constraints on versions: support GCC >= 4.4
 
@@ -275,6 +263,20 @@ VER_argparse=1.4.0
 VER_pprint=0.1
 VER_configparser=3.7.4
 
+# Defaults for url fname, tarballs and dirs, override the exceptions above
+$(foreach d,$(DEPS),$(eval FNAME_$(d)?=$(TARBALL_$(d))))
+$(foreach d,$(DEPS),$(eval TARBALL_$(d)?=$(d)-$(VER_$(d)).tar.gz))
+$(foreach d,$(DEPS),$(eval DIR_$(d)?=$(d)-$(VER_$(d))))
+
+# Default URL for python packages for downloading from PyPI, but should there
+# be any exceptions, simply define their respective URL vars below.
+$(foreach p,$(DEPS_PY),\
+	$(eval URL_$(p)?=https://pypi.io/packages/source/$(shell echo $(p) | head -c 1)/$(p)))
+
+# Default for artifacts for python packages artifacts, override the exceptions above
+$(foreach p,$(DEPS_PY),\
+	$(eval ART_$(p)?=$(PYTHON_SITE_REL)/$(p)-$(VER_$(p))-py$(VER_MAJMIN_python).egg))
+
 libs: $(DEPS_LIB)
 tools: $(DEPS_TOOL)
 py: $(DEPS_PY)
@@ -374,19 +376,38 @@ SYSROOT_VARS=\
 	LDFLAGS+="-L$(HPREFIX)/lib64 -L$(HPREFIX)/lib -Wl,-rpath=$(HPREFIX)/lib64 -Wl,-rpath=$(HPREFIX)/lib" \
 	PATH="$(HPREFIX)/bin:$$PATH" \
 
-$(ART_attr): | $(ART_pkgconfig)
+$(ART_pkgconfig):
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
+	$(MAKE) -C $(DIR) install
+
+# Most targets can reuse this standard autotools recipe
+$(ART_attr) \
+$(ART_fakeroot) \
+$(ART_libffi) \
+$(ART_pcre) \
+$(ART_glib) \
+$(ART_pixman) \
+$(ART_sqlite) \
+$(ART_ncurses) \
+$(ART_screen) \
+$(ART_curl) \
+$(ART_texinfo) \
+$(ART_python) \
+$(ART_python2) \
+$(ART_make) \
+$(ART_patchelf): \
+| $(ART_pkgconfig)
+	cd $(DIR) && $(SYSROOT_VARS) $(SYSROOT_VARS_EXTRA) \
+	./configure --prefix=$(HPREFIX) $(CONFIG_FLAGS)
 	$(MAKE) -C $(DIR)
-	$(MAKE) -C $(DIR) install # must be separate, or parallel make breaks
+	$(MAKE) -C $(DIR) install
 
 $(ART_libcap): | $(ART_pkgconfig) $(ART_attr)
 	$(PATCH) -d $(DIR) -p1 < $(wildcard $(PATCHES)/libcap/*.patch)
 	$(MAKE) -C $(DIR) DESTDIR=$(abspath $(SYSROOT)) LDFLAGS+=-L$(HPREFIX)/lib \
 		RAISE_SETFCAP=no install \
 
-$(ART_fakeroot): | $(ART_pkgconfig) $(ART_libcap)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) 
-	$(MAKE) -C $(DIR) install
+$(ART_fakeroot): | $(ART_libcap)
 
 $(ART_util_linux): | $(ART_pkgconfig) $(ART_fakeroot)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
@@ -395,38 +416,19 @@ $(ART_util_linux): | $(ART_pkgconfig) $(ART_fakeroot)
 	$(FAKEROOT) $(MAKE) -C $(DIR) install
 
 $(ART_pcre): | $(ART_pkgconfig)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
-		--enable-utf --enable-unicode-properties
-	$(MAKE) -C $(DIR) install
-
-$(ART_libffi): | $(ART_pkgconfig)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
+$(ART_pcre): CONFIG_FLAGS=--enable-utf --enable-unicode-properties
 
 $(ART_glib): | $(ART_pkgconfig) $(ART_python) $(ART_libffi) $(ART_pcre) $(ART_util_linux)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
-
-$(ART_pixman): | $(ART_pkgconfig)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	make -C $(DIR) install
 
 $(ART_libxfs): | $(ART_util_linux)
 	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR)
-	$(MAKE) -C $(DIR) install-dev # must be separate or parallel make breaks
+	$(MAKE) -C $(DIR) install-dev
 
-$(ART_sqlite): | $(ART_pkgconfig)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	make -C $(DIR) install
+$(ART_ncurses): CONFIG_FLAGS=--with-pkg-config-libdir=$(HPREFIX)/lib/pkgconfig \
+			     --enable-pc-files --with-shared --without-ada
 
-$(ART_ncurses): | $(ART_pkgconfig)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) \
-		--with-pkg-config-libdir=$(HPREFIX)/lib/pkgconfig \
-		--enable-pc-files --with-shared --without-ada
-	$(MAKE) -C $(DIR) install
-
-$(ART_openssl): | $(ART_pkgconfig)
+$(ART_openssl): | $(ART_ncurses)
 	cd $(DIR) && $(SYSROOT_VARS) ./config --prefix=$(HPREFIX)
 	$(MAKE) -C $(DIR)
 	$(MAKE) -C $(DIR) install
@@ -434,30 +436,19 @@ $(ART_openssl): | $(ART_pkgconfig)
 $(ART_dtc): | $(ART_pkgconfig)
 	$(MAKE) -C $(DIR) NO_PYTHON=1 PREFIX=$(HPREFIX) install
 
-$(ART_screen): | $(ART_pkgconfig) $(ART_ncurses)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
+$(ART_screen): | $(ART_ncurses)
+$(ART_curl): | $(ART_openssl)
 
-$(ART_curl): | $(ART_pkgconfig) $(ART_openssl)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
+$(ART_git): | $(ART_curl)
+$(ART_git): CONFIG_FLAGS=--with-curl
 
-$(ART_git): | $(ART_pkgconfig) $(ART_curl)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX) --with-curl
-	$(MAKE) -C $(DIR) install
 
 PY_PKGCFG_DEPS=ncurses libffi
-$(ART_python) $(ART_python2): | $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
-	cd $(DIR) && $(SYSROOT_VARS) \
-		CFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --cflags $(PY_PKGCFG_DEPS))" \
+$(ART_python) $(ART_python2): SYSROOT_VARS_EXTRA=\
+		CFLAGS+="$$(PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --cflags $(PY_PKGCFG_DEPS))" \
 		CPPFLAGS+="$$CFLAGS" \
-		LDFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --libs $(PY_PKGCFG_DEPS))" \
-		./configure --prefix=$(HPREFIX) --enable-loadable-sqlite-extensions --enable-optimizations
-	$(MAKE) -C $(DIR) install
-
-$(ART_texinfo): | $(ART_pkgconfig)
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
+		LDFLAGS+="$$(PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --libs $(PY_PKGCFG_DEPS))" \
+$(ART_python) $(ART_python2): CONFIG_FLAGS=--enable-loadable-sqlite-extensions --enable-optimizations
 
 UBOOTTOOLS_VARS=HOST_EXTRACFLAGS="-I$(HPREFIX)/include"
 $(ART_uboottools): | $(ART_pkgconfig)
@@ -468,31 +459,10 @@ $(ART_uboottools): | $(ART_pkgconfig)
 		tools/{mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}
 	cd $(DIR) && ln -sf fw_printenv $(HPREFIX)/bin/fw_setenv
 
-$(ART_make):
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
-
-$(ART_pkgconfig):
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR) install
-
-$(ART_patchelf):
-	cd $(DIR) && $(SYSROOT_VARS) ./configure --prefix=$(HPREFIX)
-	$(MAKE) -C $(DIR)
-	$(MAKE) -C $(DIR) install
-
-# Bootstrapping does not appear to be necessary
-#setuptools-bootstrap:
-#	cd $(WORK)/$(DIR_setuptools) && $(PYTHON) bootstrap.py
-#$(ART_setuptools): setuptools-bootstrap
-
-define py-rule
-$(ART_$(1)): $(ART_python)
-	cd $$(DIR) && PYTHONPATH=$(PYTHON_SITE):$(PYTHONPATH) \
+PY_ARTS=$(foreach d,$(DEPS_PY),$(ART_$(d)))
+$(PY_ARTS): $(ART_python)
+	cd $(DIR) && PYTHONPATH=$(PYTHON_SITE):$(PYTHONPATH) \
 		$(PYTHON) setup.py install --prefix=$(HPREFIX)
-endef
-
-$(foreach d,$(DEPS_PY),$(eval $(call py-rule,$(d))))
 
 # All python packages depend on setuptools
 $(foreach d,$(filter-out setuptools,$(DEPS_PY)),$(eval $(ART_$(d)): $(ART_setuptools)))
