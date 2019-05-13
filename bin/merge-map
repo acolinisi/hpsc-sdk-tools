@@ -12,9 +12,10 @@ args = parser.parse_args()
 
 def write_fields(f, *fields):
     TAB_WIDTH = 8 # spaces
-    FIELD_WIDTH = 4 # tabs
+    MIN_FIELD_WIDTH = 4 # tabs
     for e in fields:
-        tabs = FIELD_WIDTH - len(e) // TAB_WIDTH
+        field_width = max(len(e) // TAB_WIDTH + 1, MIN_FIELD_WIDTH)
+        tabs = field_width - len(e) // TAB_WIDTH
         tabs = tabs if tabs >= 0 else 0
         padding = "\t" * tabs
         f.write(e + padding)
