@@ -444,6 +444,7 @@ $(ART_git): | $(ART_curl)
 $(ART_git): CONFIG_FLAGS=--with-curl
 
 
+$(ART_python) $(ART_python2): | $(ART_sqlite) $(ART_openssl) $(ART_ncurses) $(ART_libffi)
 PY_PKGCFG_DEPS=ncurses libffi
 $(ART_python) $(ART_python2): SYSROOT_VARS_EXTRA=\
 		CFLAGS+="$$(PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --cflags $(PY_PKGCFG_DEPS))" \
