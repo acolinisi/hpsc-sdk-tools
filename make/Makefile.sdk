@@ -154,7 +154,7 @@ $(foreach d,$(DEPS),$(eval $(ART_$(d)): DIR=$(WORK)/$(DIR_$(d))))
 
 # Several alternatives for installing dependencies
 
-deps-centos7: toolchains env
+deps-centos7: env
 	yum install -y https://centos7.iuscommunity.org/ius-release.rpm
 	yum update
 	yum group install "Development Tools"
@@ -165,7 +165,7 @@ deps-centos7: toolchains env
 	yum install cairo-devel cairo-gobject-devel gobject-introspection-devel \
 		pygobject2 pygboject2-devel
 
-deps-sysroot: tools-sysroot toolchains env
+deps-sysroot: tools-sysroot env
 	@echo 'source $(abspath $(SYSROOT)/bld/env.sh)' >> $(ENV_FILE)
 
 # Components of the SDK that are built from source
