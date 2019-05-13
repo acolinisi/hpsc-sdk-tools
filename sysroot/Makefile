@@ -448,7 +448,7 @@ PY_PKGCFG_DEPS=ncurses libffi
 $(ART_python) $(ART_python2): SYSROOT_VARS_EXTRA=\
 		CFLAGS+="$$(PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --cflags $(PY_PKGCFG_DEPS))" \
 		CPPFLAGS+="$$CFLAGS" \
-		LDFLAGS+="$$(PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --libs $(PY_PKGCFG_DEPS))" \
+		LDFLAGS+="$$(PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --libs $(PY_PKGCFG_DEPS))"
 $(ART_python) $(ART_python2): CONFIG_FLAGS=--enable-loadable-sqlite-extensions --enable-optimizations
 
 UBOOTTOOLS_VARS=HOST_EXTRACFLAGS="-I$(HPREFIX)/include"
