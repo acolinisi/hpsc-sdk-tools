@@ -103,6 +103,7 @@ DEPS_TOOL=\
 	screen \
 	git \
 	python \
+	python2 \
 	texinfo \
 	uboottools \
 	make \
@@ -152,6 +153,8 @@ VER_git=2.21.0
 VER_MAJMIN_python=3.7
 VER_PATCH_python=3
 VER_python=$(VER_MAJMIN_python).$(VER_PATCH_python)
+# Python2 is needed by Yocto build, not used anywhere else (see HOSTTOOLS)
+VER_python2=2.7.16
 VER_texinfo=6.6
 # u-boot >=2018.05 requires GCC >= 6 (but 2018.05 breaks, so we patch 2019.01)
 VER_uboottools=2019.01
@@ -177,6 +180,7 @@ TARBALL_sqlite=sqlite-autoconf-$(VER_sqlite_NUM).tar.gz
 TARBALL_git=git-$(VER_git).tar.xz
 TARBALL_setuptools=setuptools-$(VER_setuptools).zip
 TARBALL_python=Python-$(VER_python).tar.xz
+TARBALL_python2=Python-$(VER_python2).tar.xz
 TARBALL_uboottools=u-boot-$(VER_uboottools).tar.bz2
 TARBALL_pkgconfig=pkg-config-$(VER_pkgconfig).tar.gz
 
@@ -190,6 +194,7 @@ DIR_util_linux=util-linux-$(VER_util_linux)
 DIR_libxfs=xfsprogs-$(VER_libxfs)
 DIR_sqlite=sqlite-autoconf-$(VER_sqlite_NUM)
 DIR_python=Python-$(VER_python)
+DIR_python2=Python-$(VER_python2)
 DIR_uboottools=u-boot-$(VER_uboottools)
 DIR_pkgconfig=pkg-config-$(VER_pkgconfig)
 
@@ -209,6 +214,7 @@ URL_curl=https://curl.haxx.se/download
 URL_screen=https://ftp.gnu.org/gnu/screen
 URL_git=https://mirrors.edge.kernel.org/pub/software/scm/git
 URL_python=https://www.python.org/ftp/python/$(VER_python)
+URL_python2=https://www.python.org/ftp/python/$(VER_python2)
 URL_texinfo=https://ftp.gnu.org/gnu/texinfo
 URL_uboottools=ftp://ftp.denx.de/pub/u-boot
 URL_make=https://ftp.gnu.org/gnu/make
@@ -239,6 +245,7 @@ ART_dtc=$(BIN)/dtc
 ART_screen=$(BIN)/screen
 ART_git=$(BIN)/git
 ART_python=$(BIN)/python3
+ART_python2=$(BIN)/python2
 ART_texinfo=$(BIN)/makeinfo
 ART_uboottools=$(BIN)/mkimage
 ART_make=$(BIN)/make
@@ -415,7 +422,7 @@ $(ART_git): | $(ART_pkgconfig) $(ART_curl)
 	$(MAKE) -C $(DIR) install
 
 PY_PKGCFG_DEPS=ncurses libffi
-$(ART_python): | $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
+$(ART_python) $(ART_python2): | $(ART_pkgconfig) $(ART_sqlite) $(ART_ncurses) $(ART_libffi)
 	cd $(DIR) && $(SYSROOT_VARS) \
 		CFLAGS+="$(shell PKG_CONFIG_PATH=$(PKGCFG_PATHS) $(PKGCONFIG) --cflags $(PY_PKGCFG_DEPS))" \
 		CPPFLAGS+="$$CFLAGS" \
