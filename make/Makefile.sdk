@@ -25,11 +25,11 @@ TC_PREFIX=$(TC_SYSROOT)/usr
 WGET=wget
 TAR=tar
 
-all: tools toolchains env qemu qemu-dt
-clean: tools-clean toolchains-clean env-clean qemu-clean qemu-dt-clean
+all: tools toolchains env qemu qemu-dt sysroot
+clean: tools-clean toolchains-clean env-clean qemu-clean qemu-dt-clean sysroot-clean
 
 # Prerequisites added to this rule dynamically
-fetch: tools-sysroot-fetch
+fetch: toolchains-fetch sysroot-fetch tools-sysroot-fetch
 
 TC_PATHS=$(foreach t,$(DEPS_TC),$(TC)/$(DIR_$(t))/bin)
 SPACE=$(subst ,, )
@@ -69,11 +69,6 @@ DEPS_LIB=\
 	zlib \
 
 DEPS=$(DEPS_LIB) $(DEPS_TC)
-
-toolchains: $(DEPS_TC)
-toolchains-clean:
-	rm -rf $(TC)/
-.PHONY: toolchains-clean
 
 # Other toolchain distributables may work as well, with the known exceptions:
 # * GCC v8 breaks build of kernel 4.14 (build completes but kernel does not run)
@@ -120,7 +115,6 @@ $(ART_zlib):
 	mkdir -p $@
 
 define fetch-rule
-fetch: $(FETCH)/$(TARBALL_$(1))
 $(FETCH_CACHE)/$(TARBALL_$(1)): | $(FETCH_CACHE)/.
 	$(WGET) --no-verbose -O $$@ $(URL_$(1))/$$(@F)
 .INTERMEDIATE: $(FETCH_CACHE)/$(TARBALL_$(1))
@@ -146,10 +140,12 @@ $(2)/$(DIR_$(1)): $(FETCH)/$(TARBALL_$(1)) | $(2)/.
 	touch $$@
 $(1) : | $(2)/$(DIR_$(1))
 endef
+.PHONY: sysroot
 
-define clean-rule
+define sysroot-clean-rule
 $(1)-clean:
 	rm -rf $(WORK)/$(DIR_$(1)) $(ART_$(1))
+.PHONY: $(1)-clean
 endef
 
 define tc-relocate-rule
@@ -160,13 +156,13 @@ tc-$(1)-relocate: $(TC)/$(DIR_$(1)) $(ART_glibc)
 $(1): tc-$(1)-relocate
 endef
 
-$(foreach d,$(DEPS),\
-	$(eval $(call fetch-rule,$(d)))\
-	$(eval $(call clean-rule,$(d))))
+$(foreach d,$(DEPS),$(eval $(call fetch-rule,$(d))))
 $(foreach d,$(DEPS_TC),\
 	$(eval $(call extract-rule,$(d),$(TC)))\
 	$(eval $(call tc-relocate-rule,$(d),$(TC))))
-$(foreach d,$(DEPS_LIB),$(eval $(call extract-rule,$(d),$(WORK))))
+$(foreach d,$(DEPS_LIB),\
+	$(eval $(call extract-rule,$(d),$(WORK)))\
+	$(eval $(call sysroot-clean-rule,$(d))))
 
 # Make extract target a prereq of build/install target
 $(foreach d,$(DEPS),$(eval $(ART_$(d)): | $(WORK)/$(DIR_$(d))))
@@ -176,6 +172,17 @@ $(foreach d,$(DEPS_LIB),$(eval $(d): $(ART_$(d))))
 
 # Define per-target DIR to allow recipies to be more concise
 $(foreach d,$(DEPS),$(eval $(ART_$(d)): DIR=$(WORK)/$(DIR_$(d))))
+
+toolchains: $(DEPS_TC)
+toolchains-fetch: $(foreach tc,$(DEPS_TC),$(FETCH)/$(TARBALL_$(1)))
+toolchains-clean:
+	rm -rf $(TC)/
+.PHONY: toolchains-clean
+
+sysroot: $(DEPS_LIB)
+sysroot-clean: $(foreach d,$(DEPS_LIB),$(d)-clean)
+sysroot-fetch: $(foreach d,$(DEPS_LIB),$(FETCH)/$(TARBALL_$(d)))
+.PHONY: sysroot sysroot-clean
 
 # Several alternatives for installing dependencies
 
