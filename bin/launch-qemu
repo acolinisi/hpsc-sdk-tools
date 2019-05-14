@@ -18,9 +18,9 @@ function finish {
     fi
     if [ ! -z "$CONSOLES_PID" ]
     then
-        if ps -p $CONSOLES_PID >/dev/null 2>&1
+        if ps -p "$CONSOLES_PID" >/dev/null 2>&1
         then
-            kill $CONSOLES_PID
+            kill "$CONSOLES_PID"
         fi
     fi
 }
@@ -30,66 +30,32 @@ function source_if_exists()
 {
     if [ -f "$1" ]
     then
-        echo Loading env from: $1
+        echo "Loading env from: $1"
         source "$1"
     fi
 }
-
-# Memory images created by this script will go here
-: ${RUN_DIR:=.}
-
-PORT_BASE=$((1024 + $(id -u) + 1000)) # arbitrary, but unique and not system
-LOG_FILE=/tmp/qemu-$(whoami).log
-BRIDGE=br0
-HOST_BIND_IP=127.0.0.1
-
-# Source files from which to init mem images (none by default)
-TRCH_SMC_SRAM=
-TRCH_SMC_NAND=
-HPPS_SMC_SRAM=
-HPPS_SMC_NAND=
-
-# This maximum is respected by Qemu, regardless of what memory is defined in
-# Qemu device tree (e.g. generic-loader will fail to load a file that exceeds
-# this maximum, even if DT defines larger memory).
-MAX_VM_MEM=4G
-
-# Size of off-chip memory connected to SMC SRAM ports,
-# this size is used if/when this script creates the images.
-LSIO_SRAM_SIZE=0x04000000           #  64MB
-HPPS_SRAM_SIZE=0x01000000           #  16MB
-HPPS_NAND_SIZE=0x10000000           # 256MB
-HPPS_NAND_PAGE_SIZE=2048 # bytes
-HPPS_NAND_OOB_SIZE=64 # bytes
-HPPS_NAND_ECC_SIZE=12 # bytes
-HPPS_NAND_PAGES_PER_BLOCK=64 # bytes
-TRCH_NAND_SIZE=0x10000000           # 256MB
-TRCH_NAND_PAGE_SIZE=2048 # bytes
-TRCH_NAND_OOB_SIZE=64 # bytes
-TRCH_NAND_ECC_SIZE=12 # bytes
-TRCH_NAND_PAGES_PER_BLOCK=64 # bytes
 
 # Allow overriding settings (most of which settable via command line)
 ENV_FILES=("${PWD}/qemu-env.sh")
 
 parse_addr() {
-    echo $1 | sed 's/_//g'
+    echo "$1" | sed 's/_//g'
 }
 hex() {
-    printf "0x%x" $1
+    printf "0x%x" "$1"
 }
 extract_word() {
-    IDX=$1
+    local IDX=$1
     shift
     local i=0
     for w in "$@"
     do
-        if [ $i -eq $IDX ]
+        if [ $i -eq "$IDX" ]
         then
-            echo $w
+            echo "$w"
             return
         fi
-        i=$(($i + 1))
+        i=$((i + 1))
     done
 }
 
@@ -119,8 +85,8 @@ create_nand_image()
     local pages_per_block=$4
     local oob_size=$5
     local ecc_size=$6
-    local blocks="$(nand_blocks $size $page_size $pages_per_block)"
-    run qemu-nand-creator $page_size $oob_size $pages_per_block $blocks $ecc_size 1 "$file"
+    local blocks="$(nand_blocks "$size" "$page_size" "$pages_per_block")"
+    run qemu-nand-creator "$page_size" "$oob_size" "$pages_per_block" "$blocks" "$ecc_size" 1 "$file"
 }
 
 create_if_absent()
@@ -134,8 +100,8 @@ create_if_absent()
     then
         if [ -f "$src" ]
         then
-            echo "Ovewriting memory image..."
-            run cp $src $dest
+            echo "Overwriting memory image..."
+            run cp "$src" "$dest"
         else
             echo "Creating memory image..."
             $creator "$dest" "$@"
@@ -148,30 +114,28 @@ create_if_absent()
 create_images()
 {
     set -e
-
     create_if_absent "${TRCH_SRAM_FILE}" "${TRCH_SMC_SRAM}" "${TRCH_SMC_SRAM_OVERWRITE}" \
-        create_sram_image ${LSIO_SRAM_SIZE}
+        create_sram_image "${LSIO_SRAM_SIZE}"
     create_if_absent "${TRCH_NAND_FILE}" "${TRCH_SMC_NAND}" "${TRCH_SMC_NAND_OVERWRITE}" \
-        create_nand_image $TRCH_NAND_SIZE $TRCH_NAND_PAGE_SIZE $TRCH_NAND_PAGES_PER_BLOCK \
-                $TRCH_NAND_OOB_SIZE $TRCH_NAND_ECC_SIZE
+        create_nand_image "$TRCH_NAND_SIZE" "$TRCH_NAND_PAGE_SIZE" "$TRCH_NAND_PAGES_PER_BLOCK" \
+                "$TRCH_NAND_OOB_SIZE" "$TRCH_NAND_ECC_SIZE"
     create_if_absent "${HPPS_SRAM_FILE}" "${HPPS_SMC_SRAM}" "${HPPS_SMC_SRAM_OVERWRITE}" \
-        create_sram_image ${HPPS_SRAM_SIZE}
+        create_sram_image "${HPPS_SRAM_SIZE}"
     create_if_absent "${HPPS_NAND_FILE}" "${HPPS_SMC_NAND}" "${HPPS_SMC_NAND_OVERWRITE}" \
-        create_nand_image $HPPS_NAND_SIZE $HPPS_NAND_PAGE_SIZE $HPPS_NAND_PAGES_PER_BLOCK \
-                $HPPS_NAND_OOB_SIZE $HPPS_NAND_ECC_SIZE
+        create_nand_image "$HPPS_NAND_SIZE" "$HPPS_NAND_PAGE_SIZE" "$HPPS_NAND_PAGES_PER_BLOCK" \
+                "$HPPS_NAND_OOB_SIZE" "$HPPS_NAND_ECC_SIZE"
     set +e
 }
 
 function usage()
 {
-    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-p port]*] [-i id] [ cmd ]" 1>&2
+    echo "Usage: $0 [-hSq] [-d dt_file] [-e env]* [-m mem] [-n netcfg [-p port]*] [ cmd ]" 1>&2
     echo "               cmd: command" 1>&2
     echo "                    run - start emulation (default)" 1>&2
     echo "                    gdb - launch the emulator in GDB" 1>&2
     echo "               -d dt_file: Qemu device tree file that defines the machine" 1>&2
     echo "               -e env: load environment settings from file" 1>&2
     echo "               -m memory map: preload files into memory" 1>&2
-    echo "               -i id: numeric ID to identify the Qemu instance" 1>&2
     echo "               -n netcfg : choose networking configuration" 1>&2
     echo "                   user: forward a port on the host to the target NIC" 1>&2
     echo "                   tap: create a host tunnel interface to the target NIC (requires root)" 1>&2
@@ -210,8 +174,8 @@ function setup_screen()
 
 function serial_ptys()
 {
-    qmp.py -q localhost $QMP_PORT query-chardev | \
-        qemu-chardev-ptys ${SERIAL_PORTS[*]}
+    qmp.py -q localhost "$QMP_PORT" query-chardev | \
+        qemu-chardev-ptys "${SERIAL_PORTS[@]}"
 }
 
 function attach_consoles()
@@ -261,7 +225,7 @@ function attach_consoles()
     if [ "$RESET" -eq 1 ]
     then
         echo "Sending 'continue' command to Qemu to reset the machine..."
-        qmp.py localhost $QMP_PORT cont
+        qmp.py localhost "$QMP_PORT" cont
     else
         echo "Waiting for 'continue' (aka. reset) command via GDB or QMP connection..."
     fi
@@ -271,7 +235,7 @@ setup_console()
 {
     for session in "${SCREEN_SESSIONS[@]}"
     do
-        setup_screen $session
+        setup_screen "$session"
     done
     attach_consoles &
     CONSOLES_PID=$!
@@ -282,7 +246,7 @@ preload_memory()
     set -e
     local map_file=$1
     echo "Preloading memory according to map file: $map_file"
-    if [ ! -r ${map_file} ] # 'while...done < file' not fatal even with set -e
+    if [ ! -r "${map_file}" ] # 'while...done < file' not fatal even with set -e
     then
         echo "ERROR: can't read preload memory map file: $map_file" 1>&2
         return 1
@@ -297,11 +261,12 @@ preload_memory()
         then
             continue
         fi
-        line=$(echo $line | sed 's/\(.*\)\s*#.*/\1/')
+        line=$(echo "$line" | sed 's/\(.*\)\s*#.*/\1/')
+        local WORDS=($line)
 
-        local key=$(extract_word 0 $line)
-        local addr_spec=$(extract_word 1 $line)
-        local in_file=$(eval echo $(extract_word 2 $line)) # expand vars
+        local key=$(extract_word 0 "${WORDS[@]}")
+        local addr_spec=$(extract_word 1 "${WORDS[@]}")
+        local in_file=$(eval echo "$(extract_word 2 "${WORDS[@]}")") # expand vars
 
         if [[ -z "$key" || -z "$addr_spec" || -z "$in_file" ]]
         then
@@ -311,20 +276,20 @@ preload_memory()
 
         # Address field can be: 0x00000000, 0x0000_0000, after(name), -, 4:<any of the above>
         addr_spec=$(echo "$addr_spec" | sed 's/(/\[/g' | sed 's/)/\]/g') # ()->[] for eval
-        addr_spec=$(eval echo $addr_spec)
+        addr_spec=$(eval echo "$addr_spec")
         addr_spec=$(echo "$addr_spec" | sed 's/_//g')
         local cpu="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+\):.*/\1/p')" # may be empty
         addr_spec="$(echo "$addr_spec" | sed -n 's/^\([0-9]\+:\)\?\(.*\)/\2/p')"
-        local ref_seg=$(echo $addr_spec | sed -n 's/^after\[\([^)]\+\)\]/\1/p')
+        local ref_seg=$(echo "$addr_spec" | sed -n 's/^after\[\([^)]\+\)\]/\1/p')
         if [ ! -z "$ref_seg" ]
         then
-            local addr=$(hex $((${SEGMENT_ADDRS[$ref_seg]} + $(stat -c '%s' ${SEGMENT_FILES[$ref_seg]}))))
+            local addr=$(hex $((${SEGMENT_ADDRS[$ref_seg]} + $(stat -c '%s' "${SEGMENT_FILES[$ref_seg]}"))))
         else
             if [[ "$addr_spec" =~ - ]]
             then  # do not supply addr
                 local addr=
             else
-                local addr="$(parse_addr $(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f]\+\)/\1\2/p'))"
+                local addr=$(parse_addr "$(echo "$addr_spec" | sed -n 's/^\(0x\)\?\([0-9A-Fa-f]\+\)/\1\2/p')")
             fi
         fi
         SEGMENT_ADDRS["$key"]="$addr"
@@ -341,13 +306,12 @@ preload_memory()
         fi
         COMMAND+=(-device "$loader_arg")
 
-        line_num=$(($line_num + 1))
-    done < $map_file
+        line_num=$((line_num + 1))
+    done < "$map_file"
     set +e
 }
 
 # defaults
-ID=0
 RESET=1
 NET=none
 MONITOR=1
@@ -355,7 +319,7 @@ FWD_PORTS=()
 MEMORY_FILES=()
 
 # parse options
-while getopts "h?S?q?e:d:m:p:n:i:" o; do
+while getopts "h?S?q?e:d:m:p:n:" o; do
     case "${o}" in
         S)
             RESET=0
@@ -371,9 +335,6 @@ while getopts "h?S?q?e:d:m:p:n:i:" o; do
             ;;
         m)
             MEMORY_FILES+=("$OPTARG")
-            ;;
-        i)
-            CLI_ID="$OPTARG"
             ;;
         n)
             NET="$OPTARG"
@@ -398,46 +359,76 @@ then
     CMD="run"
 fi
 
-# Privatize generated files, ports, screen sessions for this Qemu instance
-# Note: apply CLI ID before sourcing env files so that env files can use it
-if [ ! -z "${CLI_ID}" ] # let CLI override
-then
-    ID=${CLI_ID}
-fi
-
 for qemu_env in "${ENV_FILES[@]}"
 do
-   echo QEMU ENV ${qemu_env}
-    source_if_exists ${qemu_env}
+    echo "QEMU ENV ${qemu_env}"
+    source_if_exists "${qemu_env}"
 done
 
-mkdir -p "${RUN_DIR}"
-TRCH_SRAM_FILE=${RUN_DIR}/trch.sram.bin.${ID}
-TRCH_NAND_FILE=${RUN_DIR}/trch.nand.bin.${ID}
-HPPS_NAND_FILE=${RUN_DIR}/hpps.nand.bin.${ID}
-HPPS_SRAM_FILE=${RUN_DIR}/hpps.sram.bin.${ID}
+# Privatize ports and screen sessions for this Qemu instance
+: "${ID:=0}"
 
-: ${MAC_ADDR:=00:0a:35:00:02:$ID}
+# Memory images created by this script will go here
+: "${RUN_DIR:=.}"
+mkdir -p "${RUN_DIR}"
+
+: "${LOG_FILE:=/tmp/qemu-$(whoami).log}"
+: "${BRIDGE:=br0}"
+: "${HOST_BIND_IP:=127.0.0.1}"
+
+# This maximum is respected by Qemu, regardless of what memory is defined in
+# Qemu device tree (e.g. generic-loader will fail to load a file that exceeds
+# this maximum, even if DT defines larger memory).
+: "${MAX_VM_MEM:=4G}"
+
+# Size of off-chip memory connected to SMC SRAM ports,
+# this size is used if/when this script creates the images.
+: "${LSIO_SRAM_SIZE:=0x04000000}"           #  64MB
+: "${HPPS_SRAM_SIZE:=0x01000000}"           #  16MB
+: "${HPPS_NAND_SIZE:=0x10000000}"           # 256MB
+: "${HPPS_NAND_PAGE_SIZE:=2048}" # bytes
+: "${HPPS_NAND_OOB_SIZE:=64}" # bytes
+: "${HPPS_NAND_ECC_SIZE:=12}" # bytes
+: "${HPPS_NAND_PAGES_PER_BLOCK:=64}" # bytes
+: "${TRCH_NAND_SIZE:=0x10000000}"           # 256MB
+: "${TRCH_NAND_PAGE_SIZE:=2048}" # bytes
+: "${TRCH_NAND_OOB_SIZE:=64}" # bytes
+: "${TRCH_NAND_ECC_SIZE:=12}" # bytes
+: "${TRCH_NAND_PAGES_PER_BLOCK:=64}" # bytes
+
+# Source files from which to init mem images (none by default)
+: "{TRCH_SMC_SRAM:=}"
+: "{TRCH_SMC_NAND:=}"
+: "{HPPS_SMC_SRAM:=}"
+: "{HPPS_SMC_NAND:=}"
+
+: "${TRCH_SRAM_FILE:=${RUN_DIR}/trch.sram.bin}"
+: "${TRCH_NAND_FILE:=${RUN_DIR}/trch.nand.bin}"
+: "${HPPS_NAND_FILE:=${RUN_DIR}/hpps.nand.bin}"
+: "${HPPS_SRAM_FILE:=${RUN_DIR}/hpps.sram.bin}"
+
+: "${MAC_ADDR:=00:0a:35:00:02:$ID}"
 # This target IP is for 'user' networking mode, where the address is private,
 # all instances can use the same address.
-: ${TARGET_IP:=10.0.2.15}
+: "${TARGET_IP:=10.0.2.15}"
 
-: ${SSH_TARGET_PORT:=22}
-: ${DEBUG_TARGET_PORT:=2345}
+: "${SSH_TARGET_PORT:=22}"
+: "${DEBUG_TARGET_PORT:=2345}"
 
 # These can be increased by modifying the number here without any issue;
 # they only exist in order to keep the ports for each instance together.
 MAX_INSTANCES=8
 MAX_FWD_PORTS=4
 
-: ${QMP_PORT:=$((PORT_BASE + 0 * $MAX_INSTANCES + $ID))}
-: ${GDB_PORT:=$((PORT_BASE + 1 * $MAX_INSTANCES + $ID))}
-: ${FWD_PORT_BASE:=$((PORT_BASE + 2 * $MAX_INSTANCES * $MAX_FWD_PORTS + $ID))}
+: "${PORT_BASE:=$((1024 + $(id -u) + 1000))}" # arbitrary, but unique and not system
+: "${QMP_PORT:=$((PORT_BASE + 0 * MAX_INSTANCES + ID))}"
+: "${GDB_PORT:=$((PORT_BASE + 1 * MAX_INSTANCES + ID))}"
+: "${FWD_PORT_BASE:=$((PORT_BASE + 2 * MAX_INSTANCES * MAX_FWD_PORTS + ID))}"
 
-: ${SERIAL_ID:=$ID}
+: "${SERIAL_ID:=$ID}"
 
 # Labels are created by Qemu with the convention "serialN"
-SCREEN_SESSIONS=(hpsc-$SERIAL_ID-trch hpsc-$SERIAL_ID-rtps-r52 hpsc-$SERIAL_ID-hpps)
+SCREEN_SESSIONS=("hpsc-$SERIAL_ID-trch" "hpsc-$SERIAL_ID-rtps-r52" "hpsc-$SERIAL_ID-hpps")
 SERIAL_PORTS=(serial0 serial1 serial2)
 SERIAL_PORT_ARGS=()
 for _ in "${SERIAL_PORTS[@]}"
@@ -516,14 +507,14 @@ then
     COMMAND+=(-gdb "tcp::$GDB_PORT")
 fi
 
-NET_NIC=(-net nic,vlan=0,macaddr=$MAC_ADDR)
+NET_NIC=(-net "nic,vlan=0,macaddr=$MAC_ADDR")
 case "${NET}" in
 tap)
     # See HPSC Qemu User Guide for setup. In short, do this once, as root:
     #     ip link add $BRIDGE type bridge
     #     echo "allow $BRIDGE" >> /usr/local/etc/qemu/bridge.conf
     #     install -o root -g root -m 4775 /usr/local/bin/qemu-bridge-helper $QEMU_BRIDGE_PREFIX
-    COMMAND+=("${NET_NIC[@]}" -net tap,vlan=0,br=$BRIDGE,helper=qemu-bridge-helper)
+    COMMAND+=("${NET_NIC[@]}" -net "tap,vlan=0,br=$BRIDGE,helper=qemu-bridge-helper")
     ;;
 user)
     if [[ "${#FWD_PORTS[@]}" -gt $MAX_FWD_PORTS ]]
@@ -534,12 +525,12 @@ user)
     i=0
     for port in "${FWD_PORTS[@]}"
     do
-        FWD_HOST_PORT=$(($FWD_PORT_BASE+$i))
+        FWD_HOST_PORT=$((FWD_PORT_BASE+i))
         PORT_FWD_ARGS+=",hostfwd=tcp:$HOST_BIND_IP:$FWD_HOST_PORT-$TARGET_IP:$port"
         FWD_PORTS_INFO+="$HOST_BIND_IP:$FWD_HOST_PORT-$TARGET_IP:$port\n"
-        i=$(($i + 1))
+        i=$((i + 1))
     done
-    COMMAND+=("${NET_NIC[@]}" -net user,vlan=0$PORT_FWD_ARGS)
+    COMMAND+=("${NET_NIC[@]}" -net "user,vlan=0$PORT_FWD_ARGS")
     ;;
 none)
     ;;
@@ -563,9 +554,9 @@ then
 fi
 
 echo "Final Command (one arg per line):"
-for arg in ${COMMAND[*]}
+for arg in "${COMMAND[@]}"
 do
-    echo $arg
+    echo "$arg"
 done
 echo
 
