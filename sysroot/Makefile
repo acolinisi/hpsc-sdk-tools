@@ -392,8 +392,6 @@ $(ART_ncurses) \
 $(ART_screen) \
 $(ART_curl) \
 $(ART_texinfo) \
-$(ART_python) \
-$(ART_python2) \
 $(ART_make) \
 $(ART_git) \
 $(ART_patchelf): \
