@@ -264,8 +264,8 @@ VER_pprint=0.1
 VER_configparser=3.7.4
 
 # Defaults for url fname, tarballs and dirs, override the exceptions above
-$(foreach d,$(DEPS),$(eval FNAME_$(d)?=$(TARBALL_$(d))))
 $(foreach d,$(DEPS),$(eval TARBALL_$(d)?=$(d)-$(VER_$(d)).tar.gz))
+$(foreach d,$(DEPS),$(eval FNAME_$(d)?=$(TARBALL_$(d))))
 $(foreach d,$(DEPS),$(eval DIR_$(d)?=$(d)-$(VER_$(d))))
 
 # Default URL for python packages for downloading from PyPI, but should there
