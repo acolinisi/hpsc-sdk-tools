@@ -29,7 +29,7 @@ all: tools toolchains env qemu qemu-dt
 clean: tools-clean toolchains-clean env-clean qemu-clean qemu-dt-clean
 
 # Prerequisites added to this rule dynamically
-fetch:
+fetch: tools-sysroot-fetch
 
 TC_PATHS=$(foreach t,$(DEPS_TC),$(TC)/$(DIR_$(t))/bin)
 SPACE=$(subst ,, )
