@@ -174,7 +174,7 @@ $(foreach d,$(DEPS_LIB),$(eval $(d): $(ART_$(d))))
 $(foreach d,$(DEPS),$(eval $(ART_$(d)): DIR=$(WORK)/$(DIR_$(d))))
 
 toolchains: $(DEPS_TC)
-toolchains-fetch: $(foreach tc,$(DEPS_TC),$(FETCH)/$(TARBALL_$(1)))
+toolchains-fetch: $(foreach tc,$(DEPS_TC),$(FETCH)/$(TARBALL_$(tc)))
 toolchains-clean:
 	rm -rf $(TC)/
 .PHONY: toolchains-clean
