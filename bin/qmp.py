@@ -47,10 +47,12 @@ req = """
     }
 }
 """ % (args.cmd, arg_str)
-req = req.encode()
 
 if not args.quiet:
     print(req)
+
+req = req.encode()
+
 cl.write(req)
 reply = cl.read_until(b"\r\n")
 
