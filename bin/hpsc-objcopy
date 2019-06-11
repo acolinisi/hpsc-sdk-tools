@@ -16,7 +16,7 @@ class FileIO:
 class VerilogHIO(FileIO):
     WIDTH_BYTES = 32
     WORD_SIZE = 8
-    WORDS_PER_LINE = WIDTH_BYTES / WORD_SIZE
+    WORDS_PER_LINE = WIDTH_BYTES // WORD_SIZE
     PACK_FMT = '<' + ('Q' * WORDS_PER_LINE)
 
     def __init__(self, fd):
@@ -24,11 +24,11 @@ class VerilogHIO(FileIO):
 
     def read_block(self):
         for line in self.fd:
-            if line.startswith('//'):
+            if line.startswith(b'//'):
                 continue
 
             # Sections not yet supported (i.e. non-contiguous content)
-            if line.startswith('@'):
+            if line.startswith(b'@'):
                 raise Exception("Sections not supported")
 
             h = line.strip()
@@ -89,8 +89,8 @@ FORMATS = {
 class HelpAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         parser.print_help()
-        print
-        print "Supported formats:", " ".join(FORMATS)
+        print()
+        print("Supported formats:", " ".join(FORMATS))
         sys.exit(0)
 
 parser = argparse.ArgumentParser(add_help=False,
@@ -110,7 +110,7 @@ args = parser.parse_args()
 def validate_format(cat, fmt, fmts):
     if fmt not in fmts or fmt == "help":
         if fmt != "help":
-            print >>sys.stderr, "unsupported", cat, "format:", fmt
+            print("unsupported", cat, "format:", fmt, file=sys.stderr)
             rc = 1
         else:
             rc = 0
