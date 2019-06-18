@@ -4,7 +4,7 @@ QEMU_DT=qemu-devicetrees
 # Available only on the Zebu server
 ZEBU=zebu
 ZEBU_SHELL=csh
-ZEBU_ENV=/projects/boeing/zebu_env_files/zebu_setup.sh
+ZEBU_ENV=$(abspath $(ZEBU)/zebu_setup.sh)
 
 BLD=bld
 BLD_TO_ROOT=..
