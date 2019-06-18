@@ -7,7 +7,7 @@ import os
 parser = argparse.ArgumentParser(
     description="Stripe/unstripe memory images")
 parser.add_argument('-b', '--base',
-    type=lambda x: int(x.replace('_', ''), 16),
+    type=lambda x: int(x.replace('_', ''), 16), required=True,
     help='Base address (in base 16) of the data at the beginning of the images')
 parser.add_argument('-i', '--input',
     help='Input file')
